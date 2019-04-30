@@ -91,4 +91,4 @@ def example_run():
     world.step()
     world.printself()
 
-# example_run()
+example_run()
