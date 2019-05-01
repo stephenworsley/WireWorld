@@ -63,8 +63,9 @@ class World:
         self.mode = mode
         self.staterule = staterule
         self.size = size
-        keyset = {(x//size[0], x%size[1]) for x in range(size[0]*size[1])}     # create a set of coordinate tuples
         if content is None:
+            keyset = {(x // size[0], x % size[1]) for x in
+                      range(size[0] * size[1])}  # create a set of coordinate tuples
             self.grid = {k:0 for k in keyset}
         else:
             # TODO run checks on content, perhaps reformat
@@ -137,7 +138,7 @@ class World:
         return state_dict
 
 
-    # maybe too verbose
+    # may be a useful method if I rethink implementation
     # def getcoordstate(self, coord):
     #     if coord in self.grid:
     #         return self.grid[coord]
