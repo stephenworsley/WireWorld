@@ -1,4 +1,5 @@
 # import tkinter
+import json
 
 
 states = {0, 1, 2, 3}   # more generally, set(range(N))
@@ -34,6 +35,9 @@ def ww_staterule(state, nbhd_state):
             next_state = 3
     return next_state
 
+
+rule_dict = {'wireworld': ww_staterule}
+mode_dict = {'wireworld': 'stable'}
 
 class World:
     '''
@@ -131,6 +135,7 @@ class World:
 
     def pad(self):
         '''Adds all cells adjacent to existing cells'''
+        # TODO decide what to do when adding cells outside the border
         for coord in self.grid:
             for x, y in relative_nbhd:
                 neighbour = (coord[0] + x, coord[1] + y)
@@ -164,10 +169,47 @@ class World:
         if self.mode == 'stable' or self.mode == 'semistable':
             self.trim()
 
-def example_run():
-    test_dict = {(0,1): 3, (1,0): 3, (1,2): 1, (2,1): 2}
 
-    world = World(content=test_dict)
+# this could be useful if i want to define rules from file
+# def get_rules(rule_name):
+#     '''Returns the appropriate staterule function.
+#
+#     Args:
+#     * rule_name (string (or object))
+#
+#     Returns:
+#         function
+#     '''
+#     state_rule = None
+#     if rule_name == 'wire_world':
+#         state_rule = ww_staterule
+#     return state_rule
+
+
+def load_world(world_file):
+    with open(world_file) as json_file:
+        world_data = json.load(json_file)
+    CA_type = world_data['CA_type']
+    staterule = rule_dict[CA_type]
+    mode = mode_dict[CA_type]
+    size = tuple(world_data['size'])
+    state = world_data['state']
+    if type(state) is dict:
+        state = {tuple(eval(k)): v for k,v in state.items()}
+    elif type(state) is list:
+        # TODO turn an array into a dict
+        pass
+    world = World(size=size, content=state, staterule=staterule, mode=mode)
+    return world
+
+
+
+def example_run():
+    # test_dict = {(0,1): 3, (1,0): 3, (1,2): 1, (2,1): 2}
+    #
+    # world = World(content=test_dict)
+    file = 'example_01.json'
+    world = load_world(file)
     world. printself()
     print('---')
     world.step()
