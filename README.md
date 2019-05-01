@@ -19,5 +19,6 @@ automata such as John Conway's game of life or Langtons ant.  In these, a
 cell in state 0 surrounded by cells in state 0 will remain in state 0. For 
 such cellular automata, it is only necessary to update non-zero cells and 
 cells immediately adjacent to non-zero cells. In such cases, world.mode is 
-set to semistable and the getneighbours method will create the adjacent 0 
-cells with the setdefault method.
+set to semistable and the world.pad() method will create the adjacent 0 
+cells with the setdefault method and remove 0 cells with the world.trim() 
+method after updating.

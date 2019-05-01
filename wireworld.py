@@ -112,8 +112,6 @@ class World:
         '''
         Returns the states of neighbouring cells.
 
-        Depending on self.mode, this will also create neighbouring cells
-
         Args:
 
         * coord (tuple):
@@ -122,20 +120,27 @@ class World:
         Returns:
             dict
         '''
-        mode = self.mode
         state_dict = {state: 0 for state in states}
-        if mode == 'semistable' and self.grid[coord] == 0:
-            mode = 'stable'
         for x,y in relative_nbhd:
             neighbour = (coord[0]+x, coord[1]+y)
-            if mode == 'stable':
-                if neighbour in self.grid:
-                    state = self.grid[neighbour]
-                    state_dict[state] += 1
-            if mode == 'semistable':
-                state = self.grid.setdefault(neighbour, 0)
+            if neighbour in self.grid:
+                state = self.grid[neighbour]
                 state_dict[state] += 1
         return state_dict
+
+
+    def pad(self):
+        '''Adds all cells adjacent to existing cells'''
+        for coord in self.grid:
+            for x, y in relative_nbhd:
+                neighbour = (coord[0] + x, coord[1] + y)
+                self.grid.setdefault(neighbour, 0)
+
+    def trim(self):
+        '''Removes all cells containing zeroes'''
+        for coord, state in self.grid.items():
+            if state == 0:
+                del(coord)
 
 
     # may be a useful method if I rethink implementation
@@ -149,11 +154,15 @@ class World:
     def step(self):
         '''Runs one step of the cellular automata.'''
         new_states = dict()
+        if self.mode == 'semistable':
+            self.pad()
         for coord, state in self.grid.items():
             nbhd_state = self.getneighbours(coord)
             new_state = self.staterule(state, nbhd_state)
             new_states[coord] = new_state
         self.grid = new_states
+        if self.mode == 'stable' or self.mode == 'semistable':
+            self.trim()
 
 def example_run():
     test_dict = {(0,1): 3, (1,0): 3, (1,2): 1, (2,1): 2}
