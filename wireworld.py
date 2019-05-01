@@ -2,7 +2,6 @@
 import json
 
 
-states = {0, 1, 2, 3}   # more generally, set(range(N))
 relative_nbhd = ((-1,-1), (0,-1), (1,-1),
                  (-1, 0),         (1, 0),
                  (-1, 1), (0, 1), (1, 1))
