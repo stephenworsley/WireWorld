@@ -36,14 +36,24 @@ def ww_staterule(state, nbhd_state):
     return next_state
 
 
-rule_dict = {'wireworld': ww_staterule}
-mode_dict = {'wireworld': 'stable'}
+class CA:
+    '''Contains the information needed to define a cellular automata'''
+    def __init__(self, rule, mode, states):
+        self.rule = rule
+        self.mode = mode
+        if type(states) is int:
+            self.states = set(range(states))
+        else:
+            self.states = states
+
+ww_CA = CA(rule=ww_staterule, mode='stable', states=4)
+CA_dict = {'wireworld': ww_CA}
 
 class World:
     '''
     An instance of a particular cellular automata or world.
     '''
-    def __init__(self, size=(7,7), content=None, staterule=None, mode=None, CA_type='wireworld'):
+    def __init__(self, size=(7,7), content=None, staterule=None, mode=None, states=None, CA_type='wireworld'):
         '''
         Creates a particular cellular automata.
 
@@ -65,13 +75,17 @@ class World:
             e.g. a mode of 'stable' will leave empty cells empty
         '''
         if mode is None:
-            self.mode = mode_dict[CA_type]
+            self.mode = CA_dict[CA_type].mode
         else:
             self.mode = mode
         if staterule is None:
-            self.staterule = rule_dict[CA_type]
+            self.staterule = CA_dict[CA_type].rule
         else:
             self.staterule = staterule
+        if states is None:
+            self.states = CA_dict[CA_type].states
+        else:
+            self.states = states
         self.CA_type = CA_type
         self.size = size
         if content is None:
@@ -92,7 +106,6 @@ class World:
                     state = str(self.grid[(x,y)])
                 except:
                     state = '*'
-                # state = str(self.grid.setdefault((x,y), '*'))
                 rowlist.append(state)
             print('-'.join(rowlist))
 
@@ -115,7 +128,7 @@ class World:
         '''
         if value is None:
             state = self.grid.setdefault(coord, 0)
-            state = (state-1) % (max(states)+1)
+            state = (state-1) % (max(self.states)+1)
             self.grid[coord] = state
 
 
@@ -131,7 +144,7 @@ class World:
         Returns:
             dict
         '''
-        state_dict = {state: 0 for state in states}
+        state_dict = {state: 0 for state in self.states}
         for x,y in relative_nbhd:
             neighbour = (coord[0]+x, coord[1]+y)
             if neighbour in self.grid:
@@ -197,8 +210,6 @@ def load_world(infile):
     with open(infile) as json_file:
         world_data = json.load(json_file)
     CA_type = world_data['CA_type']
-    staterule = rule_dict[CA_type]
-    mode = mode_dict[CA_type]
     size = tuple(world_data['size'])
     state = world_data['state']
     if type(state) is dict:
@@ -206,7 +217,7 @@ def load_world(infile):
     elif type(state) is list:
         # TODO turn an array into a dict
         pass
-    world = World(size=size, content=state, staterule=staterule, mode=mode, CA_type=CA_type)
+    world = World(size=size, content=state, CA_type=CA_type)
     return world
 
 
