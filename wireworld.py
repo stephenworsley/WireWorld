@@ -34,6 +34,15 @@ def ww_staterule(state, nbhd_state):
             next_state = 3
     return next_state
 
+def life_staterule(state, nbhd_state):
+    next_state = 0
+    if state == 0:
+        if nbhd_state[1] == 3:
+            next_state = 1
+    if state == 1:
+        if nbhd_state[1] == 2 or nbhd_state[1] == 3:
+            next_state = 1
+    return next_state
 
 class CA:
     '''Contains the information needed to define a cellular automata'''
@@ -46,7 +55,9 @@ class CA:
             self.states = states
 
 ww_CA = CA(rule=ww_staterule, mode='stable', states=4)
-CA_dict = {'wireworld': ww_CA}
+life_CA = CA(rule=life_staterule, mode='semistable', states=2)
+CA_dict = {'wireworld': ww_CA,
+           'life': life_CA}
 
 class World:
     '''
@@ -155,16 +166,16 @@ class World:
     def pad(self):
         '''Adds all cells adjacent to existing cells'''
         # TODO decide what to do when adding cells outside the border
-        for coord in self.grid:
+        for coord in self.grid.copy():
             for x, y in relative_nbhd:
                 neighbour = (coord[0] + x, coord[1] + y)
                 self.grid.setdefault(neighbour, 0)
 
     def trim(self):
         '''Removes all cells containing zeroes'''
-        for coord, state in self.grid.items():
+        for coord, state in self.grid.copy().items():
             if state == 0:
-                del(coord)
+                del self.grid[coord]
 
 
     # may be a useful method if I rethink implementation
@@ -250,5 +261,15 @@ def example_run():
     world.step()
     world.printself()
     save_world(world, outfile)
+
+    infile_2 = 'example_02.json'
+    world = load_world(infile_2)
+    print('---')
+    print('---')
+    world.printself()
+    for _ in range(4):
+        print('---')
+        world.step()
+        world.printself()
 
 example_run()
