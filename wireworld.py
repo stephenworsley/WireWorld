@@ -43,7 +43,7 @@ class World:
     '''
     An instance of a particular cellular automata or world.
     '''
-    def __init__(self, size=(7,7), content=None, staterule=ww_staterule, mode='stable'):
+    def __init__(self, size=(7,7), content=None, staterule=None, mode=None, CA_type='wireworld'):
         '''
         Creates a particular cellular automata.
 
@@ -64,8 +64,15 @@ class World:
             Sets the behaviour of the implementation of the cellular automata rules.
             e.g. a mode of 'stable' will leave empty cells empty
         '''
-        self.mode = mode
-        self.staterule = staterule
+        if mode is None:
+            self.mode = mode_dict[CA_type]
+        else:
+            self.mode = mode
+        if staterule is None:
+            self.staterule = rule_dict[CA_type]
+        else:
+            self.staterule = staterule
+        self.CA_type = CA_type
         self.size = size
         if content is None:
             keyset = {(x // size[0], x % size[1]) for x in
@@ -186,8 +193,8 @@ class World:
 #     return state_rule
 
 
-def load_world(world_file):
-    with open(world_file) as json_file:
+def load_world(infile):
+    with open(infile) as json_file:
         world_data = json.load(json_file)
     CA_type = world_data['CA_type']
     staterule = rule_dict[CA_type]
@@ -199,17 +206,29 @@ def load_world(world_file):
     elif type(state) is list:
         # TODO turn an array into a dict
         pass
-    world = World(size=size, content=state, staterule=staterule, mode=mode)
+    world = World(size=size, content=state, staterule=staterule, mode=mode, CA_type=CA_type)
     return world
 
+
+def save_world(world, outfile):
+    CA_type = world.CA_type
+    size = world.size
+    state = world.grid
+    state = {str(k): v for k,v in state.items()}
+    world_data = {'CA_type': CA_type,
+                  'size': size,
+                  'state': state}
+    with open(outfile, 'w') as json_file:
+        json.dump(world_data, json_file)
 
 
 def example_run():
     # test_dict = {(0,1): 3, (1,0): 3, (1,2): 1, (2,1): 2}
     #
     # world = World(content=test_dict)
-    file = 'example_01.json'
-    world = load_world(file)
+    infile = 'example_01.json'
+    outfile = 'example_out_01.json'
+    world = load_world(infile)
     world. printself()
     print('---')
     world.step()
@@ -218,5 +237,6 @@ def example_run():
     world.editpoint((1,3))
     world.step()
     world.printself()
+    save_world(world, outfile)
 
 example_run()
