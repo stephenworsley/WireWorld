@@ -10,7 +10,9 @@ class Grid(tk.Frame):
     '''Generates the wireworld GUI.'''
     def __init__(self, world, master=None, size=None):
         super().__init__(master)
-        self.grid()
+        self.pack()
+        self.grid_frame = tk.Frame(self)
+        self.grid_frame.pack(side= 'top')
         self.world = world
         if size is None:
             self.size = world.size
@@ -21,24 +23,25 @@ class Grid(tk.Frame):
             row = []
             for y in range(self.size[1]):
                 color = self.getcolor((x,y))
-                button = tk.Button(self, relief="raised", bg=color, command=self.command_generator((x,y)))
+                button = tk.Button(self.grid_frame, relief="raised", bg=color, command=self.command_generator((x,y)))
                 button.grid(row=x, column=y)
                 row.append(button)
             self.button_array.append(row)
+
         self.update_button = tk.Button(self, text='Update', command=self.update)
-        self.update_button.grid(row=self.size[0], columnspan=3, sticky='W')
+        self.update_button.pack(side = 'left')
         self.run_button = tk.Button(self, text='Run', command=self.run)
-        self.run_button.grid(row=self.size[0], column=3, columnspan=2, sticky='E')
+        self.run_button.pack(side = 'left')
         self.pause_button = tk.Button(self, text='Pause', command=self.pause)
-        self.pause_button.grid(row=self.size[0], column=5, columnspan=3, sticky='W')
+        self.pause_button.pack(side= 'left')
         self.running = False
 
         self.delay = tk.IntVar()
         self.delay.set(500)
-        self.delay_entry = tk.Entry(textvariable=self.delay)
+        self.delay_entry = tk.Entry(textvariable=self.delay, width=6)
         self.delay_label = tk.Label(text='Delay')
-        self.delay_label.grid(row=self.size[0]+1, column=0, columnspan=2, sticky='W')
-        self.delay_entry.grid(row=self.size[0]+1, column=2, columnspan=1, sticky='W')
+        self.delay_label.pack(side='left')
+        self.delay_entry.pack(side='left')
 
     def getcolor(self, coord):
         '''Returns the color associated with the specified state.'''

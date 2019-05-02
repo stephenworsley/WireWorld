@@ -217,6 +217,8 @@ class World:
 
 def load_world(infile):
     '''Loads Json file into a World object.'''
+    if infile[-5:] != '.json':
+        raise Exception('File name must end in .json')
     with open(infile) as json_file:
         world_data = json.load(json_file)
     CA_type = world_data['CA_type']
@@ -233,6 +235,8 @@ def load_world(infile):
 
 def save_world(world, outfile):
     '''Saves World object as Json file.'''
+    if outfile[-5:] != '.json':
+        raise Exception('File name must end in .json')
     CA_type = world.CA_type
     size = world.size
     state = world.grid
