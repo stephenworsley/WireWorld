@@ -1,4 +1,4 @@
-# import tkinter
+# import tkinter as tk
 import json
 
 
@@ -178,12 +178,11 @@ class World:
                 del self.grid[coord]
 
 
-    # may be a useful method if I rethink implementation
-    # def getcoordstate(self, coord):
-    #     if coord in self.grid:
-    #         return self.grid[coord]
-    #     else:
-    #         return 0
+    def getcoordstate(self, coord):
+        if coord in self.grid:
+            return self.grid[coord]
+        else:
+            return 0
 
 
     def step(self):
@@ -272,4 +271,6 @@ def example_run():
         world.step()
         world.printself()
 
-example_run()
+
+if __name__ == "__main__":
+    example_run()
