@@ -25,8 +25,14 @@ class Grid(tk.Frame):
                 button.grid(row=x, column=y)
                 row.append(button)
             self.button_array.append(row)
-        self.update = tk.Button(self, text='Update', command=self.update)
-        self.update.grid(row=self.size[0], columnspan=3, sticky='W')
+        self.update_button = tk.Button(self, text='Update', command=self.update)
+        self.update_button.grid(row=self.size[0], columnspan=3, sticky='W')
+        self.run_button = tk.Button(self, text='Run', command=self.run)
+        self.run_button.grid(row=self.size[0], column=3, columnspan=2, sticky='E')
+        self.pause_button = tk.Button(self, text='Pause', command=self.pause)
+        self.pause_button.grid(row=self.size[0], column=5, columnspan=3, sticky='W')
+        self.delay = 500
+        self.running = False
 
     def getcolor(self, coord):
         '''Returns the color associated with the specified state.'''
@@ -50,6 +56,21 @@ class Grid(tk.Frame):
             for y in range(self.size[1]):
                 color = self.getcolor((x,y))
                 self.button_array[x][y].config(bg=color)
+
+    def run(self):
+        '''Starts the update loop.'''
+        self.running = True
+        self.update()
+        self.after(self.delay, self.runcheck)
+
+    def runcheck(self):
+        '''Recursively calls the run function unless the app has been paused.'''
+        if self.running:
+            self.run()
+
+    def pause(self):
+        '''Stops the run loop.'''
+        self.running = False
 
 
 def example_run():
