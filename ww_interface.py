@@ -31,8 +31,14 @@ class Grid(tk.Frame):
         self.run_button.grid(row=self.size[0], column=3, columnspan=2, sticky='E')
         self.pause_button = tk.Button(self, text='Pause', command=self.pause)
         self.pause_button.grid(row=self.size[0], column=5, columnspan=3, sticky='W')
-        self.delay = 500
         self.running = False
+
+        self.delay = tk.IntVar()
+        self.delay.set(500)
+        self.delay_entry = tk.Entry(textvariable=self.delay)
+        self.delay_label = tk.Label(text='Delay')
+        self.delay_label.grid(row=self.size[0]+1, column=0, columnspan=2, sticky='W')
+        self.delay_entry.grid(row=self.size[0]+1, column=2, columnspan=1, sticky='W')
 
     def getcolor(self, coord):
         '''Returns the color associated with the specified state.'''
@@ -58,10 +64,10 @@ class Grid(tk.Frame):
                 self.button_array[x][y].config(bg=color)
 
     def run(self):
-        '''Starts the update loop.'''
+        '''Starts the run loop.'''
         self.running = True
         self.update()
-        self.after(self.delay, self.runcheck)
+        self.after(self.delay.get(), self.runcheck)
 
     def runcheck(self):
         '''Recursively calls the run function unless the app has been paused.'''
@@ -74,7 +80,7 @@ class Grid(tk.Frame):
 
 
 def example_run():
-    world_file = 'example_01.json'
+    world_file = 'example_03.json'
     world = ww.load_world(world_file)
 
     root = tk.Tk()
