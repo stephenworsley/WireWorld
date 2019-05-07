@@ -214,7 +214,7 @@ class World:
 #         state_rule = ww_staterule
 #     return state_rule
 
-
+#TODO add these as mothods for World
 def load_world(infile):
     '''Loads Json file into a World object.'''
     if infile[-5:] != '.json':
@@ -233,7 +233,7 @@ def load_world(infile):
     return world
 
 
-def save_world(world, outfile):
+def save_world(world, outfile, permission='x'):
     '''Saves World object as Json file.'''
     if outfile[-5:] != '.json':
         raise Exception('File name must end in .json')
@@ -244,7 +244,7 @@ def save_world(world, outfile):
     world_data = {'CA_type': CA_type,
                   'size': size,
                   'state': state}
-    with open(outfile, 'w') as json_file:
+    with open(outfile, permission) as json_file:
         json.dump(world_data, json_file)
 
 
@@ -275,6 +275,7 @@ def example_run():
         world.step()
         world.printself()
 
+    save_world(world, infile_2, permission='x')
 
 if __name__ == "__main__":
     example_run()
