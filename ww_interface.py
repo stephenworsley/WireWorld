@@ -41,6 +41,7 @@ class Grid(tk.Frame):
         self.file_button.pack(side='right')
 
     def display_world(self):
+        '''Initialises buttons based on world data.'''
         self.grid_NE = (0,0)
         self.button_array = []
         for x in range(self.size[0]):
@@ -93,6 +94,7 @@ class Grid(tk.Frame):
         self.running = False
 
     def open_file_window(self):
+        '''Opens a window with load and save options.'''
         self.pause()
         self.window = tk.Toplevel(self)
         self.window.grab_set()
@@ -107,6 +109,7 @@ class Grid(tk.Frame):
         self.save_button.grid(row=1, column=1, sticky='W')
 
     def load(self):
+        '''Attempts to load and display world data from file.'''
         try:
             world = ww.load_world(self.file_name.get())
         except Exception as e:
@@ -120,6 +123,7 @@ class Grid(tk.Frame):
         self.window.destroy()
 
     def save(self):
+        '''Attempts to save world data to file.'''
         world = self.world
         try:
             ww.save_world(world, self.file_name.get(), permission='x')
