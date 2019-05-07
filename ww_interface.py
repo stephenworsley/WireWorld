@@ -63,23 +63,25 @@ class Grid(tk.Frame):
         '''Initialises buttons based on world data.'''
         self.grid_NE = (0,0)
         self.button_array = []
-        for x in range(self.size[1]):
+        for y in range(self.size[1]):
             row = []
-            for y in range(self.size[0]):
+            for x in range(self.size[0]):
                 w_coord = self.coord_map((x,y))
                 color = self.getcolor(w_coord)
                 button = tk.Button(self.grid_frame, relief="raised", bg=color,
-                                   activebackground=color, command=self.command_generator((x,y)))
-                button.grid(row=x, column=y)
+                                   activebackground=color)
+                                   # command=self.command_generator((x,y)))
+                # button.grid(row=y, column=x)
                 row.append(button)
             self.button_array.append(row)
+        self.set_button_commands()
         self.grid_buttons()
         self.grid_arrows()
 
     def grid_buttons(self):
-        for x in range(self.size[1]):
-            for y in range(self.size[0]):
-                self.button_array[x][y].grid(row=x+2, column=y+2)
+        for y in range(self.size[1]):
+            for x in range(self.size[0]):
+                self.button_array[y][x].grid(row=y+2, column=x+2)
 
     def grid_arrows(self):
         self.grb_na.config(width=self.size[0]*4 - 4)
@@ -109,20 +111,26 @@ class Grid(tk.Frame):
 
     def command_generator(self, coord):
         '''Generates a command to update the button in the specified position.'''
+        x, y = coord
+        button = self.button_array[y][x]
         def command():
             w_coord = self.coord_map(coord)
             self.world.editpoint(w_coord)
             color = self.getcolor(w_coord)
-            x,y = coord
-            self.button_array[x][y].config(bg=color, activebackground=color)
+            button.config(bg=color, activebackground=color)
         return command
 
+    def set_button_commands(self):
+        for y in range(self.size[1]):
+            for x in range(self.size[0]):
+                self.button_array[y][x].config(command=self.command_generator((x,y)))
+
     def refresh(self):
-        for x in range(self.size[1]):
-            for y in range(self.size[0]):
+        for y in range(self.size[1]):
+            for x in range(self.size[0]):
                 w_coord = self.coord_map((x,y))
                 color = self.getcolor(w_coord)
-                self.button_array[x][y].config(bg=color, activebackground=color)
+                self.button_array[y][x].config(bg=color, activebackground=color)
 
     def w_update(self):
         '''Updates the cellular automata.'''
@@ -167,9 +175,9 @@ class Grid(tk.Frame):
             messagebox.showerror("Error", str(e))
         self.world = world
         self.size = self.world.size
-        for x in self.button_array:
-            for y in x:
-                y.destroy()
+        for y in self.button_array:
+            for x in y:
+                x.destroy()
         self.display_world()
         self.window.destroy()
 
@@ -191,15 +199,17 @@ class Grid(tk.Frame):
         self.grid_NE = (self.grid_NE[0],self.grid_NE[1]-1)
         self.size = (self.size[0],self.size[1]+1)
         button_row =[]
-        for y in range(self.size[0]):
-            x = 0
+        for x in range(self.size[0]):
+            y = 0
             w_coord = self.coord_map((x,y))
             color = self.getcolor(w_coord)
             button = tk.Button(self.grid_frame, relief="raised", bg=color,
-                               activebackground=color, command=self.command_generator((x,y)))
-            button.grid(row=x+2, column=y+2)
+                               activebackground=color)
             button_row.append(button)
         self.button_array.insert(0, button_row)
+        self.set_button_commands()
+        self.grid_buttons()
+        self.grid_arrows()
         self.refresh()
         pass
 
@@ -238,7 +248,7 @@ class Grid(tk.Frame):
 
 
 def example_run():
-    world_file = 'example_05.json'
+    world_file = 'example_03.json'
     world = ww.load_world(world_file)
 
     root = tk.Tk()
