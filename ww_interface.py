@@ -15,6 +15,15 @@ class Grid(tk.Frame):
         self.pack()
         self.grid_frame = tk.Frame(self)
         self.grid_frame.pack(side= 'top')
+        self.grb_na = tk.Button(self.grid_frame, text='+', command=self.add_n)
+        self.grb_ea = tk.Button(self.grid_frame, text='+', command=self.add_e)
+        self.grb_wa = tk.Button(self.grid_frame, text='+', command=self.add_w)
+        self.grb_sa = tk.Button(self.grid_frame, text='+', command=self.add_s)
+        self.grb_nd = tk.Button(self.grid_frame, text='-', command=self.del_n)
+        self.grb_ed = tk.Button(self.grid_frame, text='-', command=self.del_e)
+        self.grb_wd = tk.Button(self.grid_frame, text='-', command=self.del_w)
+        self.grb_sd = tk.Button(self.grid_frame, text='-', command=self.del_s)
+
 
         self.palette = colordict
         if size is None:
@@ -24,7 +33,7 @@ class Grid(tk.Frame):
         self.world = world
         self.display_world()
 
-        self.update_button = tk.Button(self, text='Update', command=self.update)
+        self.update_button = tk.Button(self, text='Update', command=self.w_update)
         self.update_button.pack(side = 'left')
         self.run_button = tk.Button(self, text='Run', command=self.run)
         self.run_button.pack(side = 'left')
@@ -47,16 +56,16 @@ class Grid(tk.Frame):
 
     def coord_map(self, coord):
         '''Maps from a coordinate on the button array to a coordinate on the world.'''
-        w_coord = (coord[0]+ self.grid_NE[0], coord[1], self.grid_NE[1])
+        w_coord = (coord[0]+self.grid_NE[0], coord[1]+self.grid_NE[1])
         return w_coord
 
     def display_world(self):
         '''Initialises buttons based on world data.'''
         self.grid_NE = (0,0)
         self.button_array = []
-        for x in range(self.size[0]):
+        for x in range(self.size[1]):
             row = []
-            for y in range(self.size[1]):
+            for y in range(self.size[0]):
                 w_coord = self.coord_map((x,y))
                 color = self.getcolor(w_coord)
                 button = tk.Button(self.grid_frame, relief="raised", bg=color,
@@ -64,7 +73,33 @@ class Grid(tk.Frame):
                 button.grid(row=x, column=y)
                 row.append(button)
             self.button_array.append(row)
+        self.grid_buttons()
+        self.grid_arrows()
 
+    def grid_buttons(self):
+        for x in range(self.size[1]):
+            for y in range(self.size[0]):
+                self.button_array[x][y].grid(row=x+2, column=y+2)
+
+    def grid_arrows(self):
+        self.grb_na.config(width=self.size[0]*4 - 4)
+        self.grb_nd.config(width=self.size[0]*4 - 4)
+        self.grb_sd.config(width=self.size[0]*4 - 4)
+        self.grb_sa.config(width=self.size[0]*4 - 4)
+        self.grb_wa.config(height=self.size[1]*2 - 1)
+        self.grb_wd.config(height=self.size[1]*2 - 1)
+        self.grb_ed.config(height=self.size[1]*2 - 1)
+        self.grb_ea.config(height=self.size[1]*2 - 1)
+
+
+        self.grb_na.grid(row=0, column=2, columnspan=self.size[0])
+        self.grb_nd.grid(row=1, column=2, columnspan=self.size[0])
+        self.grb_sd.grid(row=self.size[1]+2, column=2, columnspan=self.size[0])
+        self.grb_sa.grid(row=self.size[1]+3, column=2, columnspan=self.size[0])
+        self.grb_wa.grid(row=2, column=0, rowspan=self.size[1])
+        self.grb_wd.grid(row=2, column=1, rowspan=self.size[1])
+        self.grb_ed.grid(row=2, column=self.size[0]+2, rowspan=self.size[1])
+        self.grb_ea.grid(row=2, column=self.size[0]+3, rowspan=self.size[1])
 
     def getcolor(self, coord):
         '''Returns the color associated with the specified state.'''
@@ -83,13 +118,13 @@ class Grid(tk.Frame):
         return command
 
     def refresh(self):
-        for x in range(self.size[0]):
-            for y in range(self.size[1]):
+        for x in range(self.size[1]):
+            for y in range(self.size[0]):
                 w_coord = self.coord_map((x,y))
                 color = self.getcolor(w_coord)
                 self.button_array[x][y].config(bg=color, activebackground=color)
 
-    def update(self):
+    def w_update(self):
         '''Updates the cellular automata.'''
         self.world.step()
         self.refresh()
@@ -97,7 +132,7 @@ class Grid(tk.Frame):
     def run(self):
         '''Starts the run loop.'''
         self.running = True
-        self.update()
+        self.w_update()
         self.after(self.delay.get(), self.runcheck)
 
     def runcheck(self):
@@ -152,6 +187,43 @@ class Grid(tk.Frame):
             messagebox.showerror("Error", str(e))
         self.window.destroy()
 
+    def add_n(self):
+        self.grid_NE = (self.grid_NE[0],self.grid_NE[1]-1)
+        self.size = (self.size[0],self.size[1]+1)
+        button_row =[]
+        for y in range(self.size[0]):
+            x = 0
+            w_coord = self.coord_map((x,y))
+            color = self.getcolor(w_coord)
+            button = tk.Button(self.grid_frame, relief="raised", bg=color,
+                               activebackground=color, command=self.command_generator((x,y)))
+            button.grid(row=x+2, column=y+2)
+            button_row.append(button)
+        self.button_array.insert(0, button_row)
+        self.refresh()
+        pass
+
+    def add_e(self):
+        pass
+
+    def add_w(self):
+        pass
+
+    def add_s(self):
+        pass
+
+    def del_n(self):
+        pass
+
+    def del_e(self):
+        pass
+
+    def del_w(self):
+        pass
+
+    def del_s(self):
+        pass
+
     def palette_switch(self, palette):
         self.palette = palette
         self.refresh()
@@ -166,7 +238,7 @@ class Grid(tk.Frame):
 
 
 def example_run():
-    world_file = 'example_03.json'
+    world_file = 'example_05.json'
     world = ww.load_world(world_file)
 
     root = tk.Tk()
