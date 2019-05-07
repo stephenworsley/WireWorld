@@ -30,6 +30,7 @@ class Grid(tk.Frame):
             self.size = world.size
         else:
             self.size = size
+        self.grid_NE = (0,0)
         self.world = world
         self.display_world()
 
@@ -61,7 +62,6 @@ class Grid(tk.Frame):
 
     def display_world(self):
         '''Initialises buttons based on world data.'''
-        self.grid_NE = (0,0)
         self.button_array = []
         for y in range(self.size[1]):
             row = []
@@ -199,8 +199,8 @@ class Grid(tk.Frame):
         self.grid_NE = (self.grid_NE[0],self.grid_NE[1]-1)
         self.size = (self.size[0],self.size[1]+1)
         button_row =[]
+        y = 0
         for x in range(self.size[0]):
-            y = 0
             w_coord = self.coord_map((x,y))
             color = self.getcolor(w_coord)
             button = tk.Button(self.grid_frame, relief="raised", bg=color,
@@ -211,28 +211,111 @@ class Grid(tk.Frame):
         self.grid_buttons()
         self.grid_arrows()
         self.refresh()
-        pass
 
     def add_e(self):
-        pass
+        self.size = (self.size[0]+1, self.size[1])
+        x = self.size[0]-1
+        for y, button_row in enumerate(self.button_array):
+            w_coord = self.coord_map((x,y))
+            color = self.getcolor(w_coord)
+            button = tk.Button(self.grid_frame, relief="raised", bg=color,
+                               activebackground=color)
+            button_row.append(button)
+        self.set_button_commands()
+        self.grid_buttons()
+        self.grid_arrows()
+
 
     def add_w(self):
-        pass
+        self.grid_NE = (self.grid_NE[0]-1, self.grid_NE[1])
+        self.size = (self.size[0]+1, self.size[1])
+        x = 0
+        for y, button_row in enumerate(self.button_array):
+            w_coord = self.coord_map((x,y))
+            color = self.getcolor(w_coord)
+            button = tk.Button(self.grid_frame, relief="raised", bg=color,
+                               activebackground=color)
+            button_row.insert(0, button)
+        self.set_button_commands()
+        self.grid_buttons()
+        self.grid_arrows()
+
+        # This code also works and is more concise but affects performance slightly.
+        # for y in self.button_array:
+        #     for x in y:
+        #         x.destroy()
+        # self.display_world()
+
 
     def add_s(self):
-        pass
+        self.size = (self.size[0], self.size[1]+1)
+        button_row =[]
+        y = self.size[1]-1
+        for x in range(self.size[0]):
+            w_coord = self.coord_map((x,y))
+            color = self.getcolor(w_coord)
+            button = tk.Button(self.grid_frame, relief="raised", bg=color,
+                               activebackground=color)
+            button_row.append(button)
+        self.button_array.append(button_row)
+        self.set_button_commands()
+        self.grid_buttons()
+        self.grid_arrows()
+        self.refresh()
 
     def del_n(self):
-        pass
+        if self.size[1] <= 1:
+            return
+        self.grid_NE = (self.grid_NE[0], self.grid_NE[1]+1)
+        self.size = (self.size[0],self.size[1]-1)
+        button_row = self.button_array[0]
+        for x in button_row:
+            x.destroy()
+        self.button_array.pop(0)
+        self.set_button_commands()
+        self.grid_buttons()
+        self.grid_arrows()
+        self.refresh()
 
     def del_e(self):
-        pass
+        if self.size[0] <= 1:
+            return
+        self.size = (self.size[0]-1, self.size[1])
+        for button_row in self.button_array:
+            button = button_row[-1]
+            button.destroy()
+            button_row.pop(-1)
+        self.set_button_commands()
+        self.grid_buttons()
+        self.grid_arrows()
+        self.refresh()
 
     def del_w(self):
-        pass
+        if self.size[0] <= 1:
+            return
+        self.grid_NE = (self.grid_NE[0]+1, self.grid_NE[1])
+        self.size = (self.size[0]-1, self.size[1])
+        for button_row in self.button_array:
+            button = button_row[0]
+            button.destroy()
+            button_row.pop(0)
+        self.set_button_commands()
+        self.grid_buttons()
+        self.grid_arrows()
+        self.refresh()
 
     def del_s(self):
-        pass
+        if self.size[1] <= 1:
+            return
+        self.size = (self.size[0],self.size[1]-1)
+        button_row = self.button_array[-1]
+        for x in button_row:
+            x.destroy()
+        self.button_array.pop(-1)
+        self.set_button_commands()
+        self.grid_buttons()
+        self.grid_arrows()
+        self.refresh()
 
     def palette_switch(self, palette):
         self.palette = palette
@@ -248,7 +331,7 @@ class Grid(tk.Frame):
 
 
 def example_run():
-    world_file = 'example_03.json'
+    world_file = 'example_06.json'
     world = ww.load_world(world_file)
 
     root = tk.Tk()
