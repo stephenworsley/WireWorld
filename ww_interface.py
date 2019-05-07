@@ -5,6 +5,7 @@ from tkinter import  messagebox
 
 # TODO generate dictionaries for an arbitrary number of states, perhaps with matplotlib colormaps
 colordict = {0: 'white', 1: 'red', 2: 'blue', 3: 'yellow'}
+nightdict = {0: 'black', 1: 'red', 2: 'blue', 3: 'yellow'}
 
 
 class Grid(tk.Frame):
@@ -15,6 +16,7 @@ class Grid(tk.Frame):
         self.grid_frame = tk.Frame(self)
         self.grid_frame.pack(side= 'top')
 
+        self.palette = colordict
         if size is None:
             self.size = world.size
         else:
@@ -30,6 +32,9 @@ class Grid(tk.Frame):
         self.pause_button.pack(side= 'left')
         self.running = False
 
+        self.p_switch =tk.Button(self, text='Night mode', command=self.n_mode)
+        self.p_switch.pack(side='left')
+
         self.delay = tk.IntVar()
         self.delay.set(500)
         self.delay_entry = tk.Entry(textvariable=self.delay, width=6)
@@ -40,6 +45,11 @@ class Grid(tk.Frame):
         self.file_button = tk.Button(self, text='Load/Save', command=self.open_file_window)
         self.file_button.pack(side='right')
 
+    def coord_map(self, coord):
+        '''Maps from a coordinate on the button array to a coordinate on the world.'''
+        w_coord = (coord[0]+ self.grid_NE[0], coord[1], self.grid_NE[1])
+        return w_coord
+
     def display_world(self):
         '''Initialises buttons based on world data.'''
         self.grid_NE = (0,0)
@@ -47,7 +57,8 @@ class Grid(tk.Frame):
         for x in range(self.size[0]):
             row = []
             for y in range(self.size[1]):
-                color = self.getcolor((x,y))
+                w_coord = self.coord_map((x,y))
+                color = self.getcolor(w_coord)
                 button = tk.Button(self.grid_frame, relief="raised", bg=color,
                                    activebackground=color, command=self.command_generator((x,y)))
                 button.grid(row=x, column=y)
@@ -58,25 +69,30 @@ class Grid(tk.Frame):
     def getcolor(self, coord):
         '''Returns the color associated with the specified state.'''
         state = self.world.getcoordstate(coord)
-        color = colordict[state]
+        color = self.palette[state]
         return color
 
     def command_generator(self, coord):
         '''Generates a command to update the button in the specified position.'''
         def command():
-            self.world.editpoint(coord)
-            color = self.getcolor(coord)
+            w_coord = self.coord_map(coord)
+            self.world.editpoint(w_coord)
+            color = self.getcolor(w_coord)
             x,y = coord
             self.button_array[x][y].config(bg=color, activebackground=color)
         return command
 
+    def refresh(self):
+        for x in range(self.size[0]):
+            for y in range(self.size[1]):
+                w_coord = self.coord_map((x,y))
+                color = self.getcolor(w_coord)
+                self.button_array[x][y].config(bg=color, activebackground=color)
+
     def update(self):
         '''Updates the cellular automata.'''
         self.world.step()
-        for x in range(self.size[0]):
-            for y in range(self.size[1]):
-                color = self.getcolor((x,y))
-                self.button_array[x][y].config(bg=color, activebackground=color)
+        self.refresh()
 
     def run(self):
         '''Starts the run loop.'''
@@ -135,6 +151,18 @@ class Grid(tk.Frame):
             print(e)
             messagebox.showerror("Error", str(e))
         self.window.destroy()
+
+    def palette_switch(self, palette):
+        self.palette = palette
+        self.refresh()
+
+    def n_mode(self):
+        self.palette_switch(nightdict)
+        self.p_switch.config(text="Day mode", command=self.d_mode)
+
+    def d_mode(self):
+        self.palette_switch(colordict)
+        self.p_switch.config(text="Night mode", command=self.n_mode)
 
 
 def example_run():
