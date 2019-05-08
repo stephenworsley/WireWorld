@@ -58,6 +58,9 @@ class Grid(tk.Frame):
         self.file_button = tk.Button(self, text='Load/Save', command=self.open_file_window)
         self.file_button.pack(side='right')
 
+        self.random_button = tk.Button(self, text='Become random', command=self.becomerandom)
+        self.random_button.pack(side='right')
+
     def coord_map(self, coord):
         '''Maps from a coordinate on the button array to a coordinate on the world.'''
         w_coord = (coord[0]+self.grid_NE[0], coord[1]+self.grid_NE[1])
@@ -373,6 +376,10 @@ class Grid(tk.Frame):
         '''Change the colors to a lighter palette, toggle the button.'''
         self.palette_switch(colordict)
         self.p_switch.config(text="Night mode", command=self.n_mode)
+
+    def becomerandom(self):
+        self.world.becomerandom(4)
+        self.refresh()
 
 
 def example_run():

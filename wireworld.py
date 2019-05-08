@@ -48,13 +48,13 @@ def life_staterule(state, nbhd_state):
 
 class CA:
     '''Contains the information needed to define a cellular automata'''
-    def __init__(self, rule, mode, states, getrandom=False):
+    def __init__(self, rule=None, mode=None, states=None, getrandom=False):
         if getrandom:
             if states is None:
-                N = states
-            else:
                 N = 3
-            ca_rules = CA_generator.CA_rules(N)
+            else:
+                N = states
+            ca_rules = CA_generator.CA_rules(N_states=N)
             self.rule = ca_rules.rules
             self.mode = 'semistable'
             self.states = set(range(N))
@@ -75,7 +75,8 @@ class World:
     '''
     An instance of a particular cellular automata or world.
     '''
-    def __init__(self, size=(7,7), content=None, staterule=None, mode=None, states=None, CA_type='wireworld'):
+    def __init__(self, size=(7,7), content=None, CA=None, CA_type='wireworld'): #, staterule = None, mode = None, states = None,
+
         '''
         Creates a particular cellular automata.
 
@@ -100,19 +101,23 @@ class World:
         * CA_type (string):
             A label corresponding to the type of cellular automata to be run.
         '''
-        if mode is None:
-            self.mode = CA_dict[CA_type].mode
-        else:
-            self.mode = mode
-        if staterule is None:
-            self.staterule = CA_dict[CA_type].rule
-        else:
-            self.staterule = staterule
-        if states is None:
-            self.states = CA_dict[CA_type].states
-        else:
-            self.states = states
+        # if mode is None:
+        #     self.mode = CA_dict[CA_type].mode
+        # else:
+        #     self.mode = mode
+        # if staterule is None:
+        #     self.staterule = CA_dict[CA_type].rule
+        # else:
+        #     self.staterule = staterule
+        # if states is None:
+        #     self.states = CA_dict[CA_type].states
+        # else:
+        #     self.states = states
         self.CA_type = CA_type
+        if CA is None:
+            self.CA = CA_dict[CA_type]
+        else:
+            self.CA = CA
         self.size = size
         if content is None:
             keyset = {(x // size[0], x % size[1]) for x in
@@ -154,7 +159,7 @@ class World:
         '''
         if value is None:
             state = self.grid.setdefault(coord, 0)
-            state = (state-1) % (max(self.states)+1)
+            state = (state-1) % (max(self.CA.states)+1)
             self.grid[coord] = state
 
 
@@ -170,12 +175,14 @@ class World:
         Returns:
             dict
         '''
-        state_dict = {state: 0 for state in self.states}
+        state_dict = {state: 0 for state in self.CA.states}
         for x,y in relative_nbhd:
             neighbour = (coord[0]+x, coord[1]+y)
-            if neighbour in self.grid:
-                state = self.grid[neighbour]
-                state_dict[state] += 1
+            state = self.getcoordstate(neighbour)
+            state_dict[state] += 1
+            # if neighbour in self.grid:
+            #     state = self.grid[neighbour]
+            #     state_dict[state] += 1
         return state_dict
 
 
@@ -203,14 +210,14 @@ class World:
     def step(self):
         '''Runs one step of the cellular automata.'''
         new_states = dict()
-        if self.mode == 'semistable':
+        if self.CA.mode == 'semistable':
             self.pad()
         for coord, state in self.grid.items():
             nbhd_state = self.getneighbours(coord)
-            new_state = self.staterule(state, nbhd_state)
+            new_state = self.CA.rule(state, nbhd_state)
             new_states[coord] = new_state
         self.grid = new_states
-        if self.mode == 'stable' or self.mode == 'semistable':
+        if self.CA.mode == 'stable' or self.CA.mode == 'semistable':
             self.trim()
 
     def getbounds(self):
@@ -221,8 +228,11 @@ class World:
         y_min = min(y for x,y in self.grid)
         return ((x_min,x_max), (y_min,y_max))
 
-    def becomerandom(self):
-        pass
+    def becomerandom(self, N=3):
+        self.CA = CA(states=N, getrandom=True)
+        self.CA_type = 'random'
+        for coord, state in self.grid.items():
+            self.grid[coord] = state % N
 
 
 # this could be useful if i want to define rules from file

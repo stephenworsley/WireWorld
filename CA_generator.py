@@ -44,7 +44,7 @@ class CA_rules:
                 if permutation[0] == 8:
                     next_state = 0
                 else:
-                    next_state = random.randint(0,N)
+                    next_state = random.randint(0,N-1)
                 rule_dict[key] = next_state
         return rule_dict
 
