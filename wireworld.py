@@ -83,6 +83,10 @@ class World:
         * mode (string):
             Sets the behaviour of the implementation of the cellular automata rules.
             e.g. a mode of 'stable' will leave empty cells empty
+        * states (set):
+            The set of all possible states for a cell to be in.
+        * CA_type (string):
+            A label corresponding to the type of cellular automata to be run.
         '''
         if mode is None:
             self.mode = CA_dict[CA_type].mode
@@ -165,7 +169,6 @@ class World:
 
     def pad(self):
         '''Adds all cells adjacent to existing cells'''
-        # TODO decide what to do when adding cells outside the border
         for coord in self.grid.copy():
             for x, y in relative_nbhd:
                 neighbour = (coord[0] + x, coord[1] + y)
@@ -197,6 +200,14 @@ class World:
         self.grid = new_states
         if self.mode == 'stable' or self.mode == 'semistable':
             self.trim()
+
+    def getbounds(self):
+        '''Returns the bounds for the position of the active cells.'''
+        x_max = max(x for x,y in self.grid) # note: x,y is the coordinate, not the key value pair
+        x_min = min(x for x,y in self.grid)
+        y_max = max(y for x,y in self.grid)
+        y_min = min(y for x,y in self.grid)
+        return ((x_min,x_max), (y_min,y_max))
 
 
 # this could be useful if i want to define rules from file

@@ -6,6 +6,7 @@ from tkinter import  messagebox
 # TODO generate dictionaries for an arbitrary number of states, perhaps with matplotlib colormaps
 colordict = {0: 'white', 1: 'red', 2: 'blue', 3: 'yellow'}
 nightdict = {0: 'black', 1: 'red', 2: 'blue', 3: 'yellow'}
+oob_color = 'red'
 
 
 class Grid(tk.Frame):
@@ -23,6 +24,8 @@ class Grid(tk.Frame):
         self.grb_ed = tk.Button(self.grid_frame, text='-', command=self.del_e)
         self.grb_wd = tk.Button(self.grid_frame, text='-', command=self.del_w)
         self.grb_sd = tk.Button(self.grid_frame, text='-', command=self.del_s)
+        self.default_color_bg = self.grb_na.cget('background')
+        self.default_color_abg = self.grb_na.cget('activebackground')
 
 
         self.palette = colordict
@@ -77,13 +80,17 @@ class Grid(tk.Frame):
         self.set_button_commands()
         self.grid_buttons()
         self.grid_arrows()
+        self.world_bounds = self.world.getbounds()
+        self.indicate_oob()
 
     def grid_buttons(self):
+        '''Places the buttons representing the cellular automata.'''
         for y in range(self.size[1]):
             for x in range(self.size[0]):
                 self.button_array[y][x].grid(row=y+2, column=x+2)
 
     def grid_arrows(self):
+        '''Positions the "grid arrow" buttons appropriately for the size of the grid.'''
         self.grb_na.config(width=self.size[0]*4 - 4)
         self.grb_nd.config(width=self.size[0]*4 - 4)
         self.grb_sd.config(width=self.size[0]*4 - 4)
@@ -93,7 +100,6 @@ class Grid(tk.Frame):
         self.grb_ed.config(height=self.size[1]*2 - 1)
         self.grb_ea.config(height=self.size[1]*2 - 1)
 
-
         self.grb_na.grid(row=0, column=2, columnspan=self.size[0])
         self.grb_nd.grid(row=1, column=2, columnspan=self.size[0])
         self.grb_sd.grid(row=self.size[1]+2, column=2, columnspan=self.size[0])
@@ -102,6 +108,29 @@ class Grid(tk.Frame):
         self.grb_wd.grid(row=2, column=1, rowspan=self.size[1])
         self.grb_ed.grid(row=2, column=self.size[0]+2, rowspan=self.size[1])
         self.grb_ea.grid(row=2, column=self.size[0]+3, rowspan=self.size[1])
+
+    def indicate_oob(self):
+        '''Changes the color of the grid arrow buttons to indicate the presence of live cells out of bounds.'''
+        x_range, y_range = self.world_bounds
+        xb_min, yb_min = self.grid_NE
+        xb_max = xb_min + self.size[0] -1
+        yb_max = yb_min + self.size[1] -1
+        if xb_min > x_range[0]:
+            self.grb_wa.config(bg=oob_color, activebackground=oob_color)
+        else:
+            self.grb_wa.config(bg=self.default_color_bg, activebackground=self.default_color_abg)
+        if yb_min > y_range[0]:
+            self.grb_na.config(bg=oob_color, activebackground=oob_color)
+        else:
+            self.grb_na.config(bg=self.default_color_bg, activebackground=self.default_color_abg)
+        if xb_max < x_range[1]:
+            self.grb_ea.config(bg=oob_color, activebackground=oob_color)
+        else:
+            self.grb_ea.config(bg=self.default_color_bg, activebackground=self.default_color_abg)
+        if yb_max < y_range[1]:
+            self.grb_sa.config(bg=oob_color, activebackground=oob_color)
+        else:
+            self.grb_sa.config(bg=self.default_color_bg, activebackground=self.default_color_abg)
 
     def getcolor(self, coord):
         '''Returns the color associated with the specified state.'''
@@ -121,20 +150,24 @@ class Grid(tk.Frame):
         return command
 
     def set_button_commands(self):
+        '''Assigns the buttons in the grid with the appropriate commands'''
         for y in range(self.size[1]):
             for x in range(self.size[0]):
                 self.button_array[y][x].config(command=self.command_generator((x,y)))
 
     def refresh(self):
+        '''Sets all the appropriate colors to the button grid.'''
         for y in range(self.size[1]):
             for x in range(self.size[0]):
                 w_coord = self.coord_map((x,y))
                 color = self.getcolor(w_coord)
                 self.button_array[y][x].config(bg=color, activebackground=color)
+        self.indicate_oob()
 
     def w_update(self):
         '''Updates the cellular automata.'''
         self.world.step()
+        self.world_bounds = self.world.getbounds()
         self.refresh()
 
     def run(self):
@@ -210,7 +243,15 @@ class Grid(tk.Frame):
         self.set_button_commands()
         self.grid_buttons()
         self.grid_arrows()
-        self.refresh()
+        self.indicate_oob()
+
+        # This code also works and is more concise but affects performance slightly.
+        # self.grid_NE = (self.grid_NE[0],self.grid_NE[1]-1)
+        # self.size = (self.size[0],self.size[1]+1)
+        # for y in self.button_array:
+        #     for x in y:
+        #         x.destroy()
+        # self.display_world()
 
     def add_e(self):
         self.size = (self.size[0]+1, self.size[1])
@@ -224,7 +265,7 @@ class Grid(tk.Frame):
         self.set_button_commands()
         self.grid_buttons()
         self.grid_arrows()
-
+        self.indicate_oob()
 
     def add_w(self):
         self.grid_NE = (self.grid_NE[0]-1, self.grid_NE[1])
@@ -239,13 +280,7 @@ class Grid(tk.Frame):
         self.set_button_commands()
         self.grid_buttons()
         self.grid_arrows()
-
-        # This code also works and is more concise but affects performance slightly.
-        # for y in self.button_array:
-        #     for x in y:
-        #         x.destroy()
-        # self.display_world()
-
+        self.indicate_oob()
 
     def add_s(self):
         self.size = (self.size[0], self.size[1]+1)
@@ -261,7 +296,7 @@ class Grid(tk.Frame):
         self.set_button_commands()
         self.grid_buttons()
         self.grid_arrows()
-        self.refresh()
+        self.indicate_oob()
 
     def del_n(self):
         if self.size[1] <= 1:
@@ -273,9 +308,9 @@ class Grid(tk.Frame):
             x.destroy()
         self.button_array.pop(0)
         self.set_button_commands()
-        self.grid_buttons()
         self.grid_arrows()
-        self.refresh()
+        self.grid_buttons()
+        self.indicate_oob()
 
     def del_e(self):
         if self.size[0] <= 1:
@@ -286,9 +321,9 @@ class Grid(tk.Frame):
             button.destroy()
             button_row.pop(-1)
         self.set_button_commands()
-        self.grid_buttons()
         self.grid_arrows()
-        self.refresh()
+        self.grid_buttons()
+        self.indicate_oob()
 
     def del_w(self):
         if self.size[0] <= 1:
@@ -300,9 +335,9 @@ class Grid(tk.Frame):
             button.destroy()
             button_row.pop(0)
         self.set_button_commands()
-        self.grid_buttons()
         self.grid_arrows()
-        self.refresh()
+        self.grid_buttons()
+        self.indicate_oob()
 
     def del_s(self):
         if self.size[1] <= 1:
@@ -313,9 +348,9 @@ class Grid(tk.Frame):
             x.destroy()
         self.button_array.pop(-1)
         self.set_button_commands()
-        self.grid_buttons()
         self.grid_arrows()
-        self.refresh()
+        self.grid_buttons()
+        self.indicate_oob()
 
     def palette_switch(self, palette):
         self.palette = palette
