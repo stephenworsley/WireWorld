@@ -353,14 +353,24 @@ class Grid(tk.Frame):
         self.indicate_oob()
 
     def palette_switch(self, palette):
+        '''
+        Changes the colors assigned to each state.
+
+        Args:
+        * pallette (dict)
+            A dictionary from states to their colors.
+        '''
         self.palette = palette
         self.refresh()
 
     def n_mode(self):
+        '''Change the colors to a darker palette, toggle the button.'''
         self.palette_switch(nightdict)
         self.p_switch.config(text="Day mode", command=self.d_mode)
 
     def d_mode(self):
+
+        '''Change the colors to a lighter palette, toggle the button.'''
         self.palette_switch(colordict)
         self.p_switch.config(text="Night mode", command=self.n_mode)
 

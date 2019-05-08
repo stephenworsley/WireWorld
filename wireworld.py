@@ -1,5 +1,6 @@
 # import tkinter as tk
 import json
+import CA_generator
 
 
 relative_nbhd = ((-1,-1), (0,-1), (1,-1),
@@ -35,6 +36,7 @@ def ww_staterule(state, nbhd_state):
     return next_state
 
 def life_staterule(state, nbhd_state):
+    '''Rules for John Conway's game of life.'''
     next_state = 0
     if state == 0:
         if nbhd_state[1] == 3:
@@ -46,13 +48,23 @@ def life_staterule(state, nbhd_state):
 
 class CA:
     '''Contains the information needed to define a cellular automata'''
-    def __init__(self, rule, mode, states):
-        self.rule = rule
-        self.mode = mode
-        if type(states) is int:
-            self.states = set(range(states))
+    def __init__(self, rule, mode, states, getrandom=False):
+        if getrandom:
+            if states is None:
+                N = states
+            else:
+                N = 3
+            ca_rules = CA_generator.CA_rules(N)
+            self.rule = ca_rules.rules
+            self.mode = 'semistable'
+            self.states = set(range(N))
         else:
-            self.states = states
+            self.rule = rule
+            self.mode = mode
+            if type(states) is int:
+                self.states = set(range(states))
+            else:
+                self.states = states
 
 ww_CA = CA(rule=ww_staterule, mode='stable', states=4)
 life_CA = CA(rule=life_staterule, mode='semistable', states=2)
@@ -208,6 +220,9 @@ class World:
         y_max = max(y for x,y in self.grid)
         y_min = min(y for x,y in self.grid)
         return ((x_min,x_max), (y_min,y_max))
+
+    def becomerandom(self):
+        pass
 
 
 # this could be useful if i want to define rules from file
