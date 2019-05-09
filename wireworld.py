@@ -252,6 +252,10 @@ class World:
         for coord, state in self.grid.items():
             self.grid[coord] = state % N
 
+    # def __copy__(self):
+    #     worldcopy = World(size=self.size, content=self.grid, CA=self.CA, CA_type=self.CA_type)
+    #     return worldcopy
+
 
 # this could be useful if i want to define rules from file
 # def get_rules(rule_name):

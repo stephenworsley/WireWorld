@@ -1,6 +1,7 @@
 import wireworld as ww
 import tkinter as tk
 from tkinter import  messagebox
+import copy
 
 
 # TODO generate dictionaries for an arbitrary number of states, perhaps with matplotlib colormaps
@@ -39,15 +40,17 @@ class Grid(tk.Frame):
 
         self.update_button = tk.Button(self, text='Update', command=self.w_update)
         self.update_button.pack(side = 'left')
-        self.run_button = tk.Button(self, text='Run', command=self.run)
+        self.run_button = tk.Button(self, text='Run', command=self.click_run, width=5)
         self.run_button.pack(side = 'left')
-        self.pause_button = tk.Button(self, text='Pause', command=self.pause)
-        self.pause_button.pack(side= 'left')
         self.running = False
 
-        self.p_switch =tk.Button(self, text='Night mode', command=self.n_mode)
-        self.p_switch.pack(side='left')
-
+        self.checkpoint_button = tk.Button(self, text='Checkpoint', command=self.checkpoint)
+        self.checkpoint_button.pack(side='left')
+        self.reset_button = tk.Button(self, text= 'Reset', command=self.reset)
+        self.reset_button.pack(side='left')
+        self.cache = None
+        self.clear_button = tk.Button(self, text='Clear', command=self.clear)
+        self.clear_button.pack(side='left')
         self.delay = tk.IntVar()
         self.delay.set(500)
         self.delay_entry = tk.Entry(textvariable=self.delay, width=6)
@@ -62,7 +65,8 @@ class Grid(tk.Frame):
 
         self.file_button = tk.Button(self, text='Load/Save', command=self.open_file_window)
         self.file_button.pack(side='right')
-
+        self.p_switch = tk.Button(self, text='Night mode', command=self.n_mode)
+        self.p_switch.pack(side='right')
         self.random_button = tk.Button(self, text='Become random', command=self.becomerandom)
         self.random_button.pack(side='right')
 
@@ -193,6 +197,10 @@ class Grid(tk.Frame):
         self.world_bounds = self.world.getbounds()
         self.refresh()
 
+    def click_run(self):
+        self.run_button.config(text='Pause', command=self.pause)
+        self.run()
+
     def run(self):
         '''Starts the run loop.'''
         self.running = True
@@ -206,7 +214,25 @@ class Grid(tk.Frame):
 
     def pause(self):
         '''Stops the run loop.'''
+        self.run_button.config(text='Run', command=self.click_run)
         self.running = False
+
+    def checkpoint(self):
+        self.cache = copy.copy(self.world)
+
+    def reset(self):
+        if self.cache is None:
+            return
+        self.pause()
+        self.world = copy.copy(self.cache)
+        self.world_bounds = self.world.getbounds()
+        self.refresh()
+
+    def clear(self):
+        self.pause()
+        self.world.grid = dict()
+        self.world_bounds = None
+        self.refresh()
 
     def open_file_window(self):
         '''Opens a window with load and save options.'''
