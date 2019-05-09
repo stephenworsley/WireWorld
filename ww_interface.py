@@ -149,6 +149,7 @@ class Grid(tk.Frame):
             self.grb_sa.config(bg=self.default_color_bg, activebackground=self.default_color_abg)
 
     def cellcountupdate(self):
+        '''Displays the current number of cells and the space they take up.'''
         self.livecellcount.config(text='Number of live cells: ' + str(self.world.livecellcount()))
         if self.world_bounds is None:
             width = 0
@@ -218,9 +219,11 @@ class Grid(tk.Frame):
         self.running = False
 
     def checkpoint(self):
+        '''Creates a copy of current world data.'''
         self.cache = copy.copy(self.world)
 
     def reset(self):
+        '''Loads world data from the cache and pauses.'''
         if self.cache is None:
             return
         self.pause()
@@ -229,6 +232,7 @@ class Grid(tk.Frame):
         self.refresh()
 
     def clear(self):
+        '''Removes world grid data and pauses.'''
         self.pause()
         self.world.grid = dict()
         self.world_bounds = None
@@ -424,6 +428,7 @@ class Grid(tk.Frame):
         self.p_switch.config(text="Night mode", command=self.n_mode)
 
     def becomerandom(self):
+        '''Changes current cellular automata rule for a randomly generated one.'''
         self.world.becomerandom(4)
         self.refresh()
 

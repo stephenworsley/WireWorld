@@ -213,6 +213,12 @@ class World:
 
 
     def getcoordstate(self, coord):
+        '''
+        Returns the state at a coordinate, with empty coordinates defaulting to 0.
+
+        Returns:
+            int
+        '''
         if coord in self.grid:
             return self.grid[coord]
         else:
@@ -247,6 +253,7 @@ class World:
         return len(self.grid)
 
     def becomerandom(self, N=3):
+        '''Exchange current CA with a randomly generated one.'''
         self.CA = CA(states=N, getrandom=True)
         self.CA_type = 'random'
         for coord, state in self.grid.items():

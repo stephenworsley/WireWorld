@@ -31,6 +31,7 @@ def dict_to_tup(dictionary):
 
 # for simplicity, I may restrict myself here to CAs with 3 states
 class CA_rules:
+    '''Generates and stores CA rules in function and dictionary form.'''
     def __init__(self, CA_dict=None, N_states=3):
         if CA_dict is None:
             self.CA_dict = self.random_dict(N_states)
