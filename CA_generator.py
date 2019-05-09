@@ -1,4 +1,6 @@
 import random
+from numpy.random import choice
+
 
 def permuter(N):
     '''Generate all divisions of 8 into an N-tuple'''
@@ -36,7 +38,7 @@ class CA_rules:
             self.CA_dict = CA_dict
         self.rules = self.make_rules(self.CA_dict)
 
-    def random_dict(self, N):
+    def random_dict(self, N, sparsity=0.6, conservatism=0.25):
         rule_dict = dict()
         for state in range(N):
             for permutation in permuter(N):
@@ -44,7 +46,19 @@ class CA_rules:
                 if permutation[0] == 8:
                     next_state = 0
                 else:
-                    next_state = random.randint(0,N-1)
+                    def weight_rule(x):
+                        if x == 0 and state == 0:
+                            weight = 1 - (1-sparsity-conservatism)*(N-1)/(N-2)
+                        elif x == 0:
+                            weight = sparsity
+                        elif x == state:
+                            weight = conservatism
+                        else:
+                            weight = (1-sparsity-conservatism)/(N-2)
+                        return weight
+                    weights = [weight_rule(x) for x in range(N)]
+                    next_state = int(choice(list(range(N)), p=weights))
+                    # next_state = random.randint(0,N-1)
                 rule_dict[key] = next_state
         return rule_dict
 
@@ -55,6 +69,7 @@ class CA_rules:
             next_state = CA_dict[key]
             return next_state
         return rules
+
 
 
 # iterator = iter(permuter(3))

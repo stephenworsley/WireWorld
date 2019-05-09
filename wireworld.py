@@ -48,7 +48,7 @@ def life_staterule(state, nbhd_state):
 
 class CA:
     '''Contains the information needed to define a cellular automata'''
-    def __init__(self, rule=None, mode=None, states=None, getrandom=False):
+    def __init__(self, rule=None, mode=None, states=None, getrandom=False, ruledict=None):
         if getrandom:
             if states is None:
                 N = 3
@@ -58,6 +58,17 @@ class CA:
             self.rule = ca_rules.rules
             self.mode = 'semistable'
             self.states = set(range(N))
+            self.ruledict = ca_rules.CA_dict
+
+        elif ruledict is not None:
+            self.ruledict = ruledict
+            ca_rules = CA_generator.CA_rules(CA_dict=ruledict)
+            self.rule = ca_rules.rules
+            self.mode = mode
+            if type(states) is int:
+                self.states = set(range(states))
+            else:
+                self.states = states
         else:
             self.rule = rule
             self.mode = mode
@@ -65,6 +76,7 @@ class CA:
                 self.states = set(range(states))
             else:
                 self.states = states
+            self.ruledict = None
 
 ww_CA = CA(rule=ww_staterule, mode='stable', states=4)
 life_CA = CA(rule=life_staterule, mode='semistable', states=2)
@@ -222,11 +234,17 @@ class World:
 
     def getbounds(self):
         '''Returns the bounds for the position of the active cells.'''
+        if not bool(self.grid):
+            return None
         x_max = max(x for x,y in self.grid) # note: x,y is the coordinate, not the key value pair
         x_min = min(x for x,y in self.grid)
         y_max = max(y for x,y in self.grid)
         y_min = min(y for x,y in self.grid)
         return ((x_min,x_max), (y_min,y_max))
+
+    def livecellcount(self):
+        '''Returns the number of live cells.'''
+        return len(self.grid)
 
     def becomerandom(self, N=3):
         self.CA = CA(states=N, getrandom=True)
@@ -265,7 +283,16 @@ def load_world(infile):
     elif type(state) is list:
         # TODO turn an array into a dict
         pass
-    world = World(size=size, content=state, CA_type=CA_type)
+    if 'ruledict' in world_data:
+        string_ruledict = world_data['ruledict']
+        ruledict = {eval(k): v for k, v in string_ruledict.items()}
+        N_states = world_data['Nstates']
+        mode = world_data['mode']
+        # ca_rules = CA_generator.CA_rules(CA_dict=ruledict, N_states=N_states)
+        ca = CA(mode=mode, states=N_states, ruledict=ruledict)
+        world = World(size=size, content=state, CA=ca, CA_type=CA_type)
+    else:
+        world = World(size=size, content=state, CA_type=CA_type)
     return world
 
 
@@ -277,9 +304,15 @@ def save_world(world, outfile, permission='x'):
     size = world.size
     state = world.grid
     state = {str(k): v for k,v in state.items()}
+    ruledict = world.CA.ruledict
     world_data = {'CA_type': CA_type,
                   'size': size,
                   'state': state}
+    if ruledict is not None:
+        string_dict = {str(k): v for k, v in ruledict.items()}
+        world_data['ruledict'] = string_dict
+        world_data['Nstates'] = len(world.CA.states)
+        world_data['mode'] = world.CA.mode
     with open(outfile, permission) as json_file:
         json.dump(world_data, json_file)
 

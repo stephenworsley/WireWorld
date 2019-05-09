@@ -54,6 +54,11 @@ class Grid(tk.Frame):
         self.delay_label = tk.Label(text='Delay')
         self.delay_label.pack(side='left')
         self.delay_entry.pack(side='left')
+        self.livecellcount = tk.Label(text='Number of live cells: ')
+        self.livecellcount.pack(side='left')
+        self.spansize = tk.Label(text='Horizontal span:  Vertical span: ')
+        self.spansize.pack(side='left')
+        self.cellcountupdate()
 
         self.file_button = tk.Button(self, text='Load/Save', command=self.open_file_window)
         self.file_button.pack(side='right')
@@ -114,10 +119,14 @@ class Grid(tk.Frame):
 
     def indicate_oob(self):
         '''Changes the color of the grid arrow buttons to indicate the presence of live cells out of bounds.'''
-        x_range, y_range = self.world_bounds
         xb_min, yb_min = self.grid_NE
         xb_max = xb_min + self.size[0] -1
         yb_max = yb_min + self.size[1] -1
+        if self.world_bounds is None:
+            x_range = (xb_min, xb_max)
+            y_range = (yb_min, yb_max)
+        else:
+            x_range, y_range = self.world_bounds
         if xb_min > x_range[0]:
             self.grb_wa.config(bg=oob_color, activebackground=oob_color)
         else:
@@ -134,6 +143,16 @@ class Grid(tk.Frame):
             self.grb_sa.config(bg=oob_color, activebackground=oob_color)
         else:
             self.grb_sa.config(bg=self.default_color_bg, activebackground=self.default_color_abg)
+
+    def cellcountupdate(self):
+        self.livecellcount.config(text='Number of live cells: ' + str(self.world.livecellcount()))
+        if self.world_bounds is None:
+            width = 0
+            height = 0
+        else:
+            width = self.world_bounds[0][1] - self.world_bounds[0][0]
+            height = self.world_bounds[1][1] - self.world_bounds[1][0]
+        self.spansize.config(text='Horizontal span: {} Vertical span: {}'.format(width,height))
 
     def getcolor(self, coord):
         '''Returns the color associated with the specified state.'''
@@ -166,6 +185,7 @@ class Grid(tk.Frame):
                 color = self.getcolor(w_coord)
                 self.button_array[y][x].config(bg=color, activebackground=color)
         self.indicate_oob()
+        self.cellcountupdate()
 
     def w_update(self):
         '''Updates the cellular automata.'''
