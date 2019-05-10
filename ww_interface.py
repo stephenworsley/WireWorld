@@ -4,6 +4,7 @@ from tkinter import  messagebox
 import copy
 
 
+# set the palettes to be used
 # TODO generate dictionaries for an arbitrary number of states, perhaps with matplotlib colormaps
 colordict = {0: 'white', 1: 'red', 2: 'blue', 3: 'yellow'}
 nightdict = {0: 'black', 1: 'red', 2: 'blue', 3: 'yellow'}

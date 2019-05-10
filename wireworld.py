@@ -1,4 +1,3 @@
-# import tkinter as tk
 import json
 import CA_generator
 
@@ -87,7 +86,7 @@ class World:
     '''
     An instance of a particular cellular automata or world.
     '''
-    def __init__(self, size=(7,7), content=None, CA=None, CA_type='wireworld'): #, staterule = None, mode = None, states = None,
+    def __init__(self, size=(7,7), content=None, CA=None, CA_type='wireworld'):
 
         '''
         Creates a particular cellular automata.
@@ -113,18 +112,6 @@ class World:
         * CA_type (string):
             A label corresponding to the type of cellular automata to be run.
         '''
-        # if mode is None:
-        #     self.mode = CA_dict[CA_type].mode
-        # else:
-        #     self.mode = mode
-        # if staterule is None:
-        #     self.staterule = CA_dict[CA_type].rule
-        # else:
-        #     self.staterule = staterule
-        # if states is None:
-        #     self.states = CA_dict[CA_type].states
-        # else:
-        #     self.states = states
         self.CA_type = CA_type
         if CA is None:
             self.CA = CA_dict[CA_type]
@@ -167,7 +154,6 @@ class World:
         Kwargs:
             Value (int or None):
             sets the new state of the cell. If None, state is decremented
-
         '''
         if value is None:
             state = self.grid.setdefault(coord, 0)
@@ -192,9 +178,6 @@ class World:
             neighbour = (coord[0]+x, coord[1]+y)
             state = self.getcoordstate(neighbour)
             state_dict[state] += 1
-            # if neighbour in self.grid:
-            #     state = self.grid[neighbour]
-            #     state_dict[state] += 1
         return state_dict
 
 
@@ -259,25 +242,6 @@ class World:
         for coord, state in self.grid.items():
             self.grid[coord] = state % N
 
-    # def __copy__(self):
-    #     worldcopy = World(size=self.size, content=self.grid, CA=self.CA, CA_type=self.CA_type)
-    #     return worldcopy
-
-
-# this could be useful if i want to define rules from file
-# def get_rules(rule_name):
-#     '''Returns the appropriate staterule function.
-#
-#     Args:
-#     * rule_name (string (or object))
-#
-#     Returns:
-#         function
-#     '''
-#     state_rule = None
-#     if rule_name == 'wire_world':
-#         state_rule = ww_staterule
-#     return state_rule
 
 #TODO add these as mothods for World
 def load_world(infile):
@@ -299,7 +263,6 @@ def load_world(infile):
         ruledict = {eval(k): v for k, v in string_ruledict.items()}
         N_states = world_data['Nstates']
         mode = world_data['mode']
-        # ca_rules = CA_generator.CA_rules(CA_dict=ruledict, N_states=N_states)
         ca = CA(mode=mode, states=N_states, ruledict=ruledict)
         world = World(size=size, content=state, CA=ca, CA_type=CA_type)
     else:

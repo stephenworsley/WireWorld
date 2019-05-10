@@ -3,7 +3,11 @@ from numpy.random import choice
 
 
 def permuter(N):
-    '''Generate all divisions of 8 into an N-tuple'''
+    '''
+    Generate all divisions of 8 into an N-tuple.
+
+    This yields all N-tuples made up of positive integers such that the sum is 8.
+    '''
     head_dict = {x: 8 for x in range(N)}
     head_dict[-1] = 0
     while True:
@@ -29,7 +33,6 @@ def dict_to_tup(dictionary):
     return tup
 
 
-# for simplicity, I may restrict myself here to CAs with 3 states
 class CA_rules:
     '''Generates and stores CA rules in function and dictionary form.'''
     def __init__(self, CA_dict=None, N_states=3):
