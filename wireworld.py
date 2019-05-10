@@ -2,6 +2,7 @@ import json
 import CA_generator
 
 
+# defines the relative points that a cell considers its neighbours
 relative_nbhd = ((-1,-1), (0,-1), (1,-1),
                  (-1, 0),         (1, 0),
                  (-1, 1), (0, 1), (1, 1))
@@ -126,7 +127,6 @@ class World:
             # TODO run checks on content, perhaps reformat
             self.grid = content
 
-
     def printself(self):
         '''prints a representation of the current state in the console'''
         for y in range(self.size[1]):
@@ -158,8 +158,10 @@ class World:
         if value is None:
             state = self.grid.setdefault(coord, 0)
             state = (state-1) % (max(self.CA.states)+1)
-            self.grid[coord] = state
-
+            if state == 0 and (self.CA.mode == 'stable' or self.CA.mode == 'semistable'):
+                self.grid.pop(coord)
+            else:
+                self.grid[coord] = state
 
     def getneighbours(self, coord):
         '''
@@ -180,7 +182,6 @@ class World:
             state_dict[state] += 1
         return state_dict
 
-
     def pad(self):
         '''Adds all cells adjacent to existing cells'''
         for coord in self.grid.copy():
@@ -194,7 +195,6 @@ class World:
             if state == 0:
                 del self.grid[coord]
 
-
     def getcoordstate(self, coord):
         '''
         Returns the state at a coordinate, with empty coordinates defaulting to 0.
@@ -206,7 +206,6 @@ class World:
             return self.grid[coord]
         else:
             return 0
-
 
     def step(self):
         '''Runs one step of the cellular automata.'''

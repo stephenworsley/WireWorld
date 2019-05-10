@@ -173,6 +173,8 @@ class Grid(tk.Frame):
             self.world.editpoint(w_coord)
             color = self.getcolor(w_coord)
             button.config(bg=color, activebackground=color)
+            self.world_bounds = self.world.getbounds()
+            self.cellcountupdate()
         return command
 
     def set_button_commands(self):
