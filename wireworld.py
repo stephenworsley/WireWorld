@@ -78,6 +78,7 @@ class CA:
                 self.states = states
             self.ruledict = None
 
+# initialise the relevant CA objects and store them in a dictionary for reference
 ww_CA = CA(rule=ww_staterule, mode='stable', states=4)
 life_CA = CA(rule=life_staterule, mode='semistable', states=2)
 CA_dict = {'wireworld': ww_CA,
@@ -128,7 +129,7 @@ class World:
             self.grid = content
 
     def printself(self):
-        '''prints a representation of the current state in the console'''
+        '''prints a representation of the current state in the console.'''
         for y in range(self.size[1]):
             rowlist = []
             for x in range(self.size[0]):
@@ -183,16 +184,16 @@ class World:
         return state_dict
 
     def pad(self):
-        '''Adds all cells adjacent to existing cells'''
+        '''Adds all cells adjacent to existing cells.'''
         for coord in self.grid.copy():
             for x, y in relative_nbhd:
                 neighbour = (coord[0] + x, coord[1] + y)
                 self.grid.setdefault(neighbour, 0)
 
     def trim(self):
-        '''Removes all cells containing zeroes'''
+        '''Removes all cells containing zeroes.'''
         for coord, state in self.grid.copy().items():
-            if state == 0:
+            if state == 0 or (self.CA_type == 'random' and (max(coord)>100 or min(coord)<-100)):
                 del self.grid[coord]
 
     def getcoordstate(self, coord):
