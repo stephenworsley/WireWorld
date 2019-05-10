@@ -85,8 +85,6 @@ class Grid(tk.Frame):
                 color = self.getcolor(w_coord)
                 button = tk.Button(self.grid_frame, relief="raised", bg=color,
                                    activebackground=color)
-                                   # command=self.command_generator((x,y)))
-                # button.grid(row=y, column=x)
                 row.append(button)
             self.button_array.append(row)
         self.set_button_commands()
@@ -182,6 +180,8 @@ class Grid(tk.Frame):
             for x in range(self.size[0]):
                 self.button_array[y][x].config(command=self.command_generator((x,y)))
 
+    # This seems to be one of the bottlenecks for speed, this could be improved by keeping track of which buttons
+    # are necessary to update.
     def refresh(self):
         '''Sets all the appropriate colors to the button grid.'''
         for y in range(self.size[1]):
@@ -199,14 +199,22 @@ class Grid(tk.Frame):
         self.refresh()
 
     def click_run(self):
+        '''Starts the run loop.'''
         self.run_button.config(text='Pause', command=self.pause)
         self.run()
 
     def run(self):
-        '''Starts the run loop.'''
+        '''The main body of the run loop. Updates and tries to call itself again if conditions are met.'''
         self.running = True
         self.w_update()
-        self.after(self.delay.get(), self.runcheck)
+        try:
+            delay = self.delay.get()
+        except:
+            delay = None
+        if delay == 0 or type(delay) is not int:
+            self.pause()
+        else:
+            self.after(self.delay.get(), self.runcheck)
 
     def runcheck(self):
         '''Recursively calls the run function unless the app has been paused.'''
@@ -220,14 +228,14 @@ class Grid(tk.Frame):
 
     def checkpoint(self):
         '''Creates a copy of current world data.'''
-        self.cache = copy.copy(self.world)
+        self.cache = copy.deepcopy(self.world)
 
     def reset(self):
         '''Loads world data from the cache and pauses.'''
         if self.cache is None:
             return
         self.pause()
-        self.world = copy.copy(self.cache)
+        self.world = copy.deepcopy(self.cache)
         self.world_bounds = self.world.getbounds()
         self.refresh()
 
@@ -422,7 +430,6 @@ class Grid(tk.Frame):
         self.p_switch.config(text="Day mode", command=self.d_mode)
 
     def d_mode(self):
-
         '''Change the colors to a lighter palette, toggle the button.'''
         self.palette_switch(colordict)
         self.p_switch.config(text="Night mode", command=self.n_mode)
