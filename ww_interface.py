@@ -75,6 +75,9 @@ class Grid(tk.Frame):
         self.p_switch.pack(side='right')
         self.random_button = tk.Button(self, text='Become random', command=self.becomerandom)
         self.random_button.pack(side='right')
+        self.zoom_button = tk.Button(self, text='Zoom out', command=self.zoom_out)
+        self.zoom_button.pack(side='right')
+        self.zoomed = False
 
     def coord_map(self, coord):
         '''Maps from a coordinate on the button array to a coordinate on the world.'''
@@ -191,17 +194,29 @@ class Grid(tk.Frame):
 
     # This seems to be one of the bottlenecks for speed, this could be improved by keeping track of which buttons
     # are necessary to update.
-    def refresh(self, full=True):
+    def refresh(self, full=True, display='button'):
         '''Sets all the appropriate colors to the button grid.'''
         for y in range(self.size[1]):
             for x in range(self.size[0]):
                 w_coord = self.coord_map((x,y))
                 if full or w_coord in self.world.changeset:
                     color = self.getcolor(w_coord)
-                    self.button_array[y][x].config(bg=color, activebackground=color)
+                    self.update_color(color, (x,y), display=display)
+                    # self.button_array[y][x].config(bg=color, activebackground=color)
         if full or self.world.CA.mode != 'stable': # wireworld should never add or remove live cells while self updating
             self.indicate_oob()
             self.cellcountupdate()
+
+    def update_color(self, color, coord, display='button'):
+        x, y = coord
+        # if display == 'button':
+        #     self.button_array[y][x].config(bg=color, activebackground=color)
+        # elif display == 'canvas':
+        #     self.zc.changepix(coord, color)
+        if self.zoomed:
+            self.zc.changepix(coord, color)
+        else:
+            self.button_array[y][x].config(bg=color, activebackground=color)
 
     def stepchange(self, *args):
         self.steps.config(text='steps: {}'.format(self.stepcount.get()))
@@ -457,6 +472,58 @@ class Grid(tk.Frame):
         '''Changes current cellular automata rule for a randomly generated one.'''
         self.world.becomerandom(4)
         self.refresh()
+
+    def zoom_out(self):
+
+        self.zc = ZoomedCanvas(master=self.grid_frame, grid=self)
+        self.cached_NE = self.grid_NE
+        self.cached_size = self.size
+        self.zoom_button.config(text='Zoom in', command=self.zoom_in)
+        self.zc.grid(row=2, column=2, rowspan=self.size[1], columnspan=self.size[0])
+        self.grid_NE = self.zc.NE
+        self.size = (self.zc.width, self.zc.height)
+        self.zoomed = True
+        self.refresh()
+
+    def zoom_in(self):
+        self.zc.destroy()
+        self.zoom_button.config(text='Zoom out', command=self.zoom_out)
+        self.grid_NE = self.cached_NE
+        self.size = self.cached_size
+        self.zoomed = False
+        self.refresh()
+
+
+
+
+class ZoomedCanvas(tk.Canvas):
+    def __init__(self, master=None, NE=None, width=None, height=None, grid=None):
+        if grid is None:
+            self.NE = NE
+            self.width = width
+            self.height = height
+        else:
+            self.NE = (grid.grid_NE[0] - grid.size[0]*7, grid.grid_NE[1] - grid.size[1]*7)
+            self.width = grid.size[0]*14
+            self.height = grid.size[1]*14
+        super().__init__(master, width=self.width * 2, height=self.height * 2)
+
+        self.setpixels()
+
+    def setpixels(self):
+        self.pixel_array = []
+        for x in range(self.width):
+            row = []
+            for y in range(self.height):
+                rec = self.create_rectangle(x*2, y*2, x*2 + 1, y*2 + 1)
+                row.append(rec)
+            self.pixel_array.append(row)
+
+    def changepix(self, coord, color):
+        x, y = coord
+        pix_ID = self.pixel_array[x][y]
+        self.itemconfig(pix_ID, outline=color)
+
 
 
 def example_run():
