@@ -121,12 +121,14 @@ class World:
             self.CA = CA
         self.size = size
         if content is None:
-            keyset = {(x // size[0], x % size[1]) for x in
-                      range(size[0] * size[1])}  # create a set of coordinate tuples
-            self.grid = {k:0 for k in keyset}
+            # keyset = {(x // size[0], x % size[1]) for x in
+            #           range(size[0] * size[1])}  # create a set of coordinate tuples
+            # self.grid = {k:0 for k in keyset}
+            self.grid = dict()
         else:
             # TODO run checks on content, perhaps reformat
             self.grid = content
+        self.changeset = set(self.grid) # This set keeps track of which cells have changed after each update
 
     def printself(self):
         '''prints a representation of the current state in the console.'''
@@ -163,6 +165,7 @@ class World:
                 self.grid.pop(coord)
             else:
                 self.grid[coord] = state
+        self.changeset = set(coord)
 
     def getneighbours(self, coord):
         '''
@@ -213,10 +216,13 @@ class World:
         new_states = dict()
         if self.CA.mode == 'semistable':
             self.pad()
+        self.changeset = set()
         for coord, state in self.grid.items():
             nbhd_state = self.getneighbours(coord)
             new_state = self.CA.rule(state, nbhd_state)
             new_states[coord] = new_state
+            if state != new_state:
+                self.changeset.add(coord)
         self.grid = new_states
         if self.CA.mode == 'stable' or self.CA.mode == 'semistable':
             self.trim()

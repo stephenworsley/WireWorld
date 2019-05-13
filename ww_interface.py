@@ -185,13 +185,14 @@ class Grid(tk.Frame):
 
     # This seems to be one of the bottlenecks for speed, this could be improved by keeping track of which buttons
     # are necessary to update.
-    def refresh(self):
+    def refresh(self, full=True):
         '''Sets all the appropriate colors to the button grid.'''
         for y in range(self.size[1]):
             for x in range(self.size[0]):
                 w_coord = self.coord_map((x,y))
-                color = self.getcolor(w_coord)
-                self.button_array[y][x].config(bg=color, activebackground=color)
+                if full or w_coord in self.world.changeset:
+                    color = self.getcolor(w_coord)
+                    self.button_array[y][x].config(bg=color, activebackground=color)
         self.indicate_oob()
         self.cellcountupdate()
 
@@ -199,7 +200,7 @@ class Grid(tk.Frame):
         '''Updates the cellular automata.'''
         self.world.step()
         self.world_bounds = self.world.getbounds()
-        self.refresh()
+        self.refresh(full=False)
 
     def click_run(self):
         '''Starts the run loop.'''
