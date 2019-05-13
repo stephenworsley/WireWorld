@@ -63,6 +63,11 @@ class Grid(tk.Frame):
         self.spansize = tk.Label(text='Horizontal span:  Vertical span: ')
         self.spansize.pack(side='left')
         self.cellcountupdate()
+        self.stepcount = tk.IntVar(0)
+        self.steps = tk.Label(text='steps: {}'.format(self.stepcount.get()))
+        self.steps.pack(side='right')
+        self.stepcount.trace('w', self.stepchange)
+        self.stepcache = 0
 
         self.file_button = tk.Button(self, text='Load/Save', command=self.open_file_window)
         self.file_button.pack(side='right')
@@ -175,6 +180,7 @@ class Grid(tk.Frame):
             button.config(bg=color, activebackground=color)
             self.world_bounds = self.world.getbounds()
             self.cellcountupdate()
+            self.stepcount.set(0)
         return command
 
     def set_button_commands(self):
@@ -193,14 +199,19 @@ class Grid(tk.Frame):
                 if full or w_coord in self.world.changeset:
                     color = self.getcolor(w_coord)
                     self.button_array[y][x].config(bg=color, activebackground=color)
-        self.indicate_oob()
-        self.cellcountupdate()
+        if full or self.world.CA.mode != 'stable': # wireworld should never add or remove live cells while self updating
+            self.indicate_oob()
+            self.cellcountupdate()
+
+    def stepchange(self, *args):
+        self.steps.config(text='steps: {}'.format(self.stepcount.get()))
 
     def w_update(self):
         '''Updates the cellular automata.'''
         self.world.step()
         self.world_bounds = self.world.getbounds()
         self.refresh(full=False)
+        self.stepcount.set(self.stepcount.get() + 1)
 
     def click_run(self):
         '''Starts the run loop.'''
@@ -233,6 +244,7 @@ class Grid(tk.Frame):
     def checkpoint(self):
         '''Creates a copy of current world data.'''
         self.cache = copy.deepcopy(self.world)
+        self.stepcache = self.stepcount.get()
 
     def reset(self):
         '''Loads world data from the cache and pauses.'''
@@ -242,6 +254,7 @@ class Grid(tk.Frame):
         self.world = copy.deepcopy(self.cache)
         self.world_bounds = self.world.getbounds()
         self.refresh()
+        self.stepcount.set(self.stepcache)
 
     def clear(self):
         '''Removes world grid data and pauses.'''
@@ -249,6 +262,7 @@ class Grid(tk.Frame):
         self.world.grid = dict()
         self.world_bounds = None
         self.refresh()
+        self.stepcount.set(0)
 
     def open_file_window(self):
         '''Opens a window with load and save options.'''
@@ -278,6 +292,7 @@ class Grid(tk.Frame):
                 x.destroy()
         self.display_world()
         self.window.destroy()
+        self.stepcount.set(0)
 
     def save(self):
         '''Attempts to save world data to file.'''
