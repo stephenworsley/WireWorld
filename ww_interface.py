@@ -157,6 +157,9 @@ class Grid(tk.Frame):
         self.grb_ed.grid(row=2, column=self.size[0]+2, rowspan=self.size[1])
         self.grb_ea.grid(row=2, column=self.size[0]+3, rowspan=self.size[1])
 
+        if self.zoomed:
+            self.zc.grid(row=2, column=2, rowspan=self.size[1], columnspan=self.size[0])
+
     def indicate_oob(self):
         '''Changes the color of the grid arrow buttons to indicate the presence of live cells out of bounds.'''
         if self.zoomed:
@@ -592,7 +595,7 @@ class ZoomedCanvas(tk.Canvas):
         super().__init__(master, width=self.width * self.pix_size, height=self.height * self.pix_size)
 
         self.setpixels()
-        self.setoriginbox(self.NW, grid.grid_NE, grid.size)
+        # self.setoriginbox(self.NW, grid.grid_NE, grid.size)
 
     def setpixels(self):
         self.pixel_array = []
