@@ -25,18 +25,18 @@ class Grid(tk.Frame):
             self.size = world.size
         else:
             self.size = size
-        self.grid_NE = (0,0)
+        self.grid_NE = (0,0) # TODO should be NW
         self.world = world
 
 
-        self.grb_na = tk.Button(self.grid_frame, text='+', command=self.add_n)
+        self.grb_na = tk.Button(self.grid_frame, text='+')
         self.grb_ea = tk.Button(self.grid_frame, text='+')
-        self.grb_wa = tk.Button(self.grid_frame, text='+', command=self.add_w)
-        self.grb_sa = tk.Button(self.grid_frame, text='+', command=self.add_s)
-        self.grb_nd = tk.Button(self.grid_frame, text='-', command=self.del_n)
-        self.grb_ed = tk.Button(self.grid_frame, text='-', command=self.del_e)
-        self.grb_wd = tk.Button(self.grid_frame, text='-', command=self.del_w)
-        self.grb_sd = tk.Button(self.grid_frame, text='-', command=self.del_s)
+        self.grb_wa = tk.Button(self.grid_frame, text='+')
+        self.grb_sa = tk.Button(self.grid_frame, text='+')
+        self.grb_nd = tk.Button(self.grid_frame, text='-')
+        self.grb_ed = tk.Button(self.grid_frame, text='-')
+        self.grb_wd = tk.Button(self.grid_frame, text='-')
+        self.grb_sd = tk.Button(self.grid_frame, text='-')
         self.default_color_bg = self.grb_na.cget('background')
         self.default_color_abg = self.grb_na.cget('activebackground')
 
@@ -82,8 +82,24 @@ class Grid(tk.Frame):
         self.zoom_button = tk.Button(self, text='Zoom out', command=self.zoom_out)
         self.zoom_button.pack(side='right')
 
+
+        self.add_n = self.grid_arrow_factory(orientation='N', function='+')
         self.add_e = self.grid_arrow_factory(orientation='E', function='+')
+        self.add_w = self.grid_arrow_factory(orientation='W', function='+')
+        self.add_s = self.grid_arrow_factory(orientation='S', function='+')
+        self.del_n = self.grid_arrow_factory(orientation='N', function='-')
+        self.del_e = self.grid_arrow_factory(orientation='E', function='-')
+        self.del_w = self.grid_arrow_factory(orientation='W', function='-')
+        self.del_s = self.grid_arrow_factory(orientation='S', function='-')
+
+        self.grb_na.config(command=self.add_n)
         self.grb_ea.config(command=self.add_e)
+        self.grb_wa.config(command=self.add_w)
+        self.grb_sa.config(command=self.add_s)
+        self.grb_nd.config(command=self.del_n)
+        self.grb_ed.config(command=self.del_e)
+        self.grb_wd.config(command=self.del_w)
+        self.grb_sd.config(command=self.del_s)
 
     def coord_map(self, coord, reversed=False):
         '''Maps from a coordinate on the button array to a coordinate on the world.'''
@@ -228,7 +244,7 @@ class Grid(tk.Frame):
 
         # We loop through the minimal number of cells in order to refresh,
         # either all the displayed cells or all the changed cells.
-        if full or len(self.world.changeset) > size[0]*size[1]: # TODO size reformat
+        if full or len(self.world.changeset) > size[0]*size[1]:
             for y in range(size[1]):
                 for x in range(size[0]):
                     w_coord = self.coord_map((x,y))
@@ -377,7 +393,7 @@ class Grid(tk.Frame):
             if function == '+':
                 delta = 1
             elif function == '-':
-                if (orientation == 'E' or orientation == 'W') and self.size[0] <= 1: # TODO size change
+                if (orientation == 'E' or orientation == 'W') and self.size[0] <= 1:
                     return
                 if (orientation == 'N' or orientation == 'S') and self.size[1] <= 1:
                     return
@@ -387,13 +403,18 @@ class Grid(tk.Frame):
                 if self.zoomed:
                     self.zoomed_size = (self.zoomed_size[0], self.zoomed_size[1] + delta*span)
                 if orientation == 'N':
-                    self.grid_NE = (self.grid_NE[0],self.grid_NE[1] - delta)
+                    self.grid_NE = (self.grid_NE[0], self.grid_NE[1] - delta)
+                    if self.zoomed:
+                        self.zoomed_NW = (self.zoomed_NW[0], self.zoomed_NW[1] - delta*span)
+
             elif orientation == 'E' or orientation == 'W':
                 self.size = (self.size[0] + delta, self.size[1])
                 if self.zoomed:
                     self.zoomed_size = (self.zoomed_size[0] + delta*span, self.zoomed_size[1])
                 if orientation == 'W':
                     self.grid_NE = (self.grid_NE[0] - delta, self.grid_NE[1])
+                    if self.zoomed:
+                        self.zoomed_NW = (self.zoomed_NW[0] - delta*span, self.zoomed_NW[1])
 
             if self.zoomed:
                 # expand the canvas
@@ -509,139 +530,6 @@ class Grid(tk.Frame):
             self.grid_arrows()
             self.indicate_oob()
         return mover
-    #
-    # self.add_e = grid_arrow_factory(orientation='E', function='+')
-
-
-
-
-
-
-
-
-    def add_n(self):
-        self.grid_NE = (self.grid_NE[0],self.grid_NE[1]-1)
-        self.size = (self.size[0],self.size[1]+1)
-        button_row =[]
-        y = 0
-        for x in range(self.size[0]):
-            w_coord = self.coord_map((x,y))
-            color = self.getcolor(w_coord)
-            button = tk.Button(self.grid_frame, relief="raised", bg=color,
-                               activebackground=color)
-            button_row.append(button)
-        self.button_array.insert(0, button_row)
-        self.set_button_commands()
-        self.grid_buttons()
-        self.grid_arrows()
-        self.indicate_oob()
-
-        # This code also works and is more concise but affects performance slightly.
-        # self.grid_NE = (self.grid_NE[0],self.grid_NE[1]-1)
-        # self.size = (self.size[0],self.size[1]+1)
-        # for y in self.button_array:
-        #     for x in y:
-        #         x.destroy()
-        # self.display_world()
-
-    # def add_e(self):
-    #     self.size = (self.size[0]+1, self.size[1])
-    #     x = self.size[0]-1
-    #     for y, button_row in enumerate(self.button_array):
-    #         w_coord = self.coord_map((x,y))
-    #         color = self.getcolor(w_coord)
-    #         button = tk.Button(self.grid_frame, relief="raised", bg=color,
-    #                            activebackground=color)
-    #         button_row.append(button)
-    #     self.set_button_commands()
-    #     self.grid_buttons()
-    #     self.grid_arrows()
-    #     self.indicate_oob()
-
-    def add_w(self):
-        self.grid_NE = (self.grid_NE[0]-1, self.grid_NE[1])
-        self.size = (self.size[0]+1, self.size[1])
-        x = 0
-        for y, button_row in enumerate(self.button_array):
-            w_coord = self.coord_map((x,y))
-            color = self.getcolor(w_coord)
-            button = tk.Button(self.grid_frame, relief="raised", bg=color,
-                               activebackground=color)
-            button_row.insert(0, button)
-        self.set_button_commands()
-        self.grid_buttons()
-        self.grid_arrows()
-        self.indicate_oob()
-
-    def add_s(self):
-        self.size = (self.size[0], self.size[1]+1)
-        button_row =[]
-        y = self.size[1]-1
-        for x in range(self.size[0]):
-            w_coord = self.coord_map((x,y))
-            color = self.getcolor(w_coord)
-            button = tk.Button(self.grid_frame, relief="raised", bg=color,
-                               activebackground=color)
-            button_row.append(button)
-        self.button_array.append(button_row)
-        self.set_button_commands()
-        self.grid_buttons()
-        self.grid_arrows()
-        self.indicate_oob()
-
-    def del_n(self):
-        if self.size[1] <= 1:
-            return
-        self.grid_NE = (self.grid_NE[0], self.grid_NE[1]+1)
-        self.size = (self.size[0],self.size[1]-1)
-        button_row = self.button_array[0]
-        for x in button_row:
-            x.destroy()
-        self.button_array.pop(0)
-        self.set_button_commands()
-        self.grid_arrows()
-        self.grid_buttons()
-        self.indicate_oob()
-
-    def del_e(self):
-        if self.size[0] <= 1:
-            return
-        self.size = (self.size[0]-1, self.size[1])
-        for button_row in self.button_array:
-            button = button_row[-1]
-            button.destroy()
-            button_row.pop(-1)
-        self.set_button_commands()
-        self.grid_arrows()
-        self.grid_buttons()
-        self.indicate_oob()
-
-    def del_w(self):
-        if self.size[0] <= 1:
-            return
-        self.grid_NE = (self.grid_NE[0]+1, self.grid_NE[1])
-        self.size = (self.size[0]-1, self.size[1])
-        for button_row in self.button_array:
-            button = button_row[0]
-            button.destroy()
-            button_row.pop(0)
-        self.set_button_commands()
-        self.grid_arrows()
-        self.grid_buttons()
-        self.indicate_oob()
-
-    def del_s(self):
-        if self.size[1] <= 1:
-            return
-        self.size = (self.size[0],self.size[1]-1)
-        button_row = self.button_array[-1]
-        for x in button_row:
-            x.destroy()
-        self.button_array.pop(-1)
-        self.set_button_commands()
-        self.grid_arrows()
-        self.grid_buttons()
-        self.indicate_oob()
 
     def palette_switch(self, palette):
         '''
@@ -671,9 +559,7 @@ class Grid(tk.Frame):
 
     def zoom_out(self):
 
-        self.zc = ZoomedCanvas(master=self.grid_frame, grid=self) # TODO cached size becomes size, add zoomed size
-        # self.cached_NE = self.grid_NE
-        # self.cached_size = self.size
+        self.zc = ZoomedCanvas(master=self.grid_frame, grid=self)
         self.zoom_button.config(text='Zoom in', command=self.zoom_in)
         self.zc.grid(row=2, column=2, rowspan=self.size[1], columnspan=self.size[0])
         self.destroy_buttons()
@@ -685,8 +571,6 @@ class Grid(tk.Frame):
     def zoom_in(self):
         self.zc.destroy()
         self.zoom_button.config(text='Zoom out', command=self.zoom_out)
-        # self.grid_NE = self.cached_NE
-        # self.size = self.cached_size
         self.zoomed = False
         self.display_world()
         self.refresh()
