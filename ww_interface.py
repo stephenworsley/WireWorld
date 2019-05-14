@@ -79,10 +79,13 @@ class Grid(tk.Frame):
         self.zoom_button.pack(side='right')
         self.zoomed = False
 
-    def coord_map(self, coord):
+    def coord_map(self, coord, reversed=False):
         '''Maps from a coordinate on the button array to a coordinate on the world.'''
-        w_coord = (coord[0]+self.grid_NE[0], coord[1]+self.grid_NE[1])
-        return w_coord
+        if reversed:
+            new_coord = (coord[0]-self.grid_NE[0], coord[1]-self.grid_NE[1])
+        else:
+            new_coord = (coord[0]+self.grid_NE[0], coord[1]+self.grid_NE[1])
+        return new_coord
 
     def display_world(self):
         '''Initialises buttons based on world data.'''
@@ -196,16 +199,26 @@ class Grid(tk.Frame):
     # are necessary to update.
     def refresh(self, full=True, display='button'):
         '''Sets all the appropriate colors to the button grid.'''
-
-        for y in range(self.size[1]):
-            for x in range(self.size[0]):
-                w_coord = self.coord_map((x,y))
-                if full or w_coord in self.world.changeset:
-                    color = self.getcolor(w_coord)
-                    self.update_color(color, (x,y), display=display)
         if full or self.world.CA.mode != 'stable': # wireworld should never add or remove live cells while self updating
             self.indicate_oob()
             self.cellcountupdate()
+
+        # We loop through the minimal number of cells in order to refresh,
+        # either all the displayed cells or all the changed cells.
+        if full or len(self.world.changeset) > self.size[0]*self.size[1]:
+            for y in range(self.size[1]):
+                for x in range(self.size[0]):
+                    w_coord = self.coord_map((x,y))
+                    if full or w_coord in self.world.changeset:
+                        color = self.getcolor(w_coord)
+                        self.update_color(color, (x,y), display=display)
+        else:
+            for coord in self.world.changeset:
+                w_coord = coord
+                x, y = self.coord_map(coord, reversed=True)
+                color = self.getcolor(w_coord)
+                self.update_color(color, (x, y), display=display)
+
 
     def update_color(self, color, coord, display='button'):
         x, y = coord
