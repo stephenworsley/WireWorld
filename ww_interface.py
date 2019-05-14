@@ -196,13 +196,13 @@ class Grid(tk.Frame):
     # are necessary to update.
     def refresh(self, full=True, display='button'):
         '''Sets all the appropriate colors to the button grid.'''
+
         for y in range(self.size[1]):
             for x in range(self.size[0]):
                 w_coord = self.coord_map((x,y))
                 if full or w_coord in self.world.changeset:
                     color = self.getcolor(w_coord)
                     self.update_color(color, (x,y), display=display)
-                    # self.button_array[y][x].config(bg=color, activebackground=color)
         if full or self.world.CA.mode != 'stable': # wireworld should never add or remove live cells while self updating
             self.indicate_oob()
             self.cellcountupdate()
@@ -282,6 +282,8 @@ class Grid(tk.Frame):
     def open_file_window(self):
         '''Opens a window with load and save options.'''
         self.pause()
+        if self.zoomed:
+            self.zoom_in()
         self.window = tk.Toplevel(self)
         self.window.grab_set()
         self.file_label = tk.Label(self.window, text='File name')
@@ -294,17 +296,23 @@ class Grid(tk.Frame):
         self.save_button = tk.Button(self.window, text='Save', command=self.save)
         self.save_button.grid(row=1, column=1, sticky='W')
 
+    def destroy_buttons(self):
+        '''Destroys all the buttons in the button array.'''
+        for y in self.button_array:
+            for x in y:
+                x.destroy()
+        self.button_array = []
+
+
     def load(self):
         '''Attempts to load and display world data from file.'''
         try:
             world = ww.load_world(self.file_name.get())
         except Exception as e:
             messagebox.showerror("Error", str(e))
+        self.destroy_buttons()
         self.world = world
         self.size = self.world.size
-        for y in self.button_array:
-            for x in y:
-                x.destroy()
         self.display_world()
         self.window.destroy()
         self.stepcount.set(0)
@@ -322,6 +330,7 @@ class Grid(tk.Frame):
             print(e)
             messagebox.showerror("Error", str(e))
         self.window.destroy()
+
 
     def add_n(self):
         self.grid_NE = (self.grid_NE[0],self.grid_NE[1]-1)
@@ -480,6 +489,7 @@ class Grid(tk.Frame):
         self.cached_size = self.size
         self.zoom_button.config(text='Zoom in', command=self.zoom_in)
         self.zc.grid(row=2, column=2, rowspan=self.size[1], columnspan=self.size[0])
+        self.destroy_buttons()
         self.grid_NE = self.zc.NE
         self.size = (self.zc.width, self.zc.height)
         self.zoomed = True
@@ -491,6 +501,7 @@ class Grid(tk.Frame):
         self.grid_NE = self.cached_NE
         self.size = self.cached_size
         self.zoomed = False
+        self.display_world()
         self.refresh()
 
 
@@ -506,18 +517,29 @@ class ZoomedCanvas(tk.Canvas):
             self.NE = (grid.grid_NE[0] - grid.size[0]*7, grid.grid_NE[1] - grid.size[1]*7)
             self.width = grid.size[0]*14
             self.height = grid.size[1]*14
-        super().__init__(master, width=self.width * 2, height=self.height * 2)
+        self.pix_size = 2 # set the size of the pixekls/cells
+        super().__init__(master, width=self.width * self.pix_size, height=self.height * self.pix_size)
 
         self.setpixels()
+        self.setoriginbox(self.NE, grid.grid_NE, grid.size)
 
     def setpixels(self):
         self.pixel_array = []
         for x in range(self.width):
             row = []
             for y in range(self.height):
-                rec = self.create_rectangle(x*2, y*2, x*2 + 1, y*2 + 1)
+                rec = self.create_rectangle(x*self.pix_size, y*self.pix_size,
+                                            x*self.pix_size + 1, y*self.pix_size + 1)
                 row.append(rec)
             self.pixel_array.append(row)
+
+    def setoriginbox(self, big_NE, small_NE, small_size):
+        x0 = (small_NE[0]-big_NE[0])*self.pix_size - 1
+        y0 = (small_NE[1]-big_NE[1])*self.pix_size - 1
+        x1 = x0 + (small_size[0]*self.pix_size) + 1
+        y1 = y0 + (small_size[1]*self.pix_size) + 1
+        self.create_rectangle(x0, y0, x1, y1,
+                              fill='', outline='gray', outlinestipple='gray50')
 
     def changepix(self, coord, color):
         x, y = coord
