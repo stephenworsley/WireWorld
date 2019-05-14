@@ -18,8 +18,19 @@ class Grid(tk.Frame):
         self.pack()
         self.grid_frame = tk.Frame(self)
         self.grid_frame.pack(side= 'top')
+        self.zoomed = False
+
+        self.palette = colordict
+        if size is None:
+            self.size = world.size
+        else:
+            self.size = size
+        self.grid_NE = (0,0)
+        self.world = world
+
+
         self.grb_na = tk.Button(self.grid_frame, text='+', command=self.add_n)
-        self.grb_ea = tk.Button(self.grid_frame, text='+', command=self.add_e)
+        self.grb_ea = tk.Button(self.grid_frame, text='+')
         self.grb_wa = tk.Button(self.grid_frame, text='+', command=self.add_w)
         self.grb_sa = tk.Button(self.grid_frame, text='+', command=self.add_s)
         self.grb_nd = tk.Button(self.grid_frame, text='-', command=self.del_n)
@@ -30,13 +41,6 @@ class Grid(tk.Frame):
         self.default_color_abg = self.grb_na.cget('activebackground')
 
 
-        self.palette = colordict
-        if size is None:
-            self.size = world.size
-        else:
-            self.size = size
-        self.grid_NE = (0,0)
-        self.world = world
         self.display_world()
 
         self.update_button = tk.Button(self, text='Update', command=self.w_update)
@@ -77,8 +81,9 @@ class Grid(tk.Frame):
         self.random_button.pack(side='right')
         self.zoom_button = tk.Button(self, text='Zoom out', command=self.zoom_out)
         self.zoom_button.pack(side='right')
-        self.zoomed = False
 
+        self.add_e = self.grid_arrow_factory(orientation='E', function='+')
+        self.grb_ea.config(command=self.add_e)
     def coord_map(self, coord, reversed=False):
         '''Maps from a coordinate on the button array to a coordinate on the world.'''
         if reversed:
@@ -197,7 +202,7 @@ class Grid(tk.Frame):
 
     # This seems to be one of the bottlenecks for speed, this could be improved by keeping track of which buttons
     # are necessary to update.
-    def refresh(self, full=True, display='button'):
+    def refresh(self, full=True):
         '''Sets all the appropriate colors to the button grid.'''
         if full or self.world.CA.mode != 'stable': # wireworld should never add or remove live cells while self updating
             self.indicate_oob()
@@ -211,27 +216,24 @@ class Grid(tk.Frame):
                     w_coord = self.coord_map((x,y))
                     if full or w_coord in self.world.changeset:
                         color = self.getcolor(w_coord)
-                        self.update_color(color, (x,y), display=display)
+                        self.update_color(color, (x,y))
         else:
             for coord in self.world.changeset:
                 w_coord = coord
                 x, y = self.coord_map(coord, reversed=True)
                 color = self.getcolor(w_coord)
-                self.update_color(color, (x, y), display=display)
+                self.update_color(color, (x, y))
 
 
-    def update_color(self, color, coord, display='button'):
+    def update_color(self, color, coord):
         x, y = coord
-        # if display == 'button':
-        #     self.button_array[y][x].config(bg=color, activebackground=color)
-        # elif display == 'canvas':
-        #     self.zc.changepix(coord, color)
         if self.zoomed:
             self.zc.changepix(coord, color)
         else:
             self.button_array[y][x].config(bg=color, activebackground=color)
 
     def stepchange(self, *args):
+        '''This is called and updates the steps label whenever self.stepcount changes.'''
         self.steps.config(text='steps: {}'.format(self.stepcount.get()))
 
     def w_update(self):
@@ -344,6 +346,117 @@ class Grid(tk.Frame):
             messagebox.showerror("Error", str(e))
         self.window.destroy()
 
+    def grid_arrow_factory(self, orientation, function):
+        def mover():
+            # set the amount by which to add or subtract
+            if self.zoomed:
+                span = 7
+            else:
+                span = 1
+
+            if function == '+':
+                delta = 1
+            elif function == '-':
+                if (orientation == 'E' or orientation == 'W') and self.size[0] <= span:
+                    return
+                if (orientation == 'N' or orientation == 'S') and self.size[1] <= span:
+                    return
+                delta = -1
+            if orientation == 'N':
+                self.grid_NE = (self.grid_NE[0],self.grid_NE[1] - delta)
+                self.size = (self.size[0], self.size[1] + delta)
+            elif orientation == 'S':
+                self.size = (self.size[0], self.size[1] + delta)
+            elif orientation == 'E':
+                self.size = (self.size[0] + delta, self.size[1])
+            elif orientation == 'W':
+                self.grid_NE = (self.grid_NE[0] - delta,self.grid_NE[1])
+                self.size = (self.size[0] + delta, self.size[1])
+
+            if self.zoomed:
+                # expand the canvas
+                self.zc.config(width=self.size[0], height=self.size[1])
+            if function == '+':
+                if orientation == 'N' or orientation == 'S':
+                    if self.zoomed and orientation == 'N':
+                        self.zc.move('all', dx=span, dy=0)
+                    rows = []
+                    for dy in range(span):
+                        row = []
+                        if orientation == 'N':
+                            y = dy
+                        else:
+                            y = dy + self.size[1] - span
+                        for x in range(self.size[0]):
+                            w_coord = self.coord_map((x,y))
+                            color = self.getcolor(w_coord)
+                            if self.zoomed:
+                                display_object = self.zc.create_rectangle(x*self.zc.pix_size, y*self.zc.pix_size,
+                                                                          x*self.zc.pix_size + 1, y*self.zc.pix_size + 1)
+                            else:
+                                display_object = tk.Button(self.grid_frame, relief="raised", bg=color,
+                                                           activebackground=color)
+                            row.append(display_object)
+                        rows.append(row)
+                    if self.zoomed:
+                        display_array = self.zc.pixel_array
+                    else:
+                        display_array = self.button_array
+                    if orientation == 'N':
+                        for row in reversed(rows):
+                            display_array.insert(0, row)
+                    elif orientation == 'S':
+                        for row in rows:
+                            display_array.append(row)
+                if orientation == 'E' or orientation == 'W':
+                    if self.zoomed and orientation == 'E':
+                        self.zc.move('all', dx=0, dy=span)
+
+                    rows = []
+                    for y in range(self.size[1]):
+                        row = []
+                        for dx in range(span):
+                            if orientation == 'W':
+                                x = dx + self.size[0] - span
+                            else:
+                                x = dx
+                            w_coord = self.coord_map((x,y))
+                            color = self.getcolor(w_coord)
+                            if self.zoomed:
+                                display_object = self.zc.create_rectangle(x*self.zc.pix_size, y*self.zc.pix_size,
+                                                                          x*self.zc.pix_size + 1, y*self.zc.pix_size + 1)
+                            else:
+                                display_object = tk.Button(self.grid_frame, relief="raised", bg=color,
+                                                           activebackground=color)
+                            row.append(display_object)
+                        rows.append(row)
+                    if self.zoomed:
+                        display_array = self.zc.pixel_array
+                    else:
+                        display_array = self.button_array
+                    if orientation == 'E':
+                        for display_row, extra_row in zip(display_array, rows):
+                            display_row.extend(extra_row)
+                    elif orientation == 'W':
+                        for display_row, extra_row in zip(display_array, rows):
+                            for x in reversed(extra_row):
+                                display_row.insert(0,x)
+
+        if not self.zoomed:
+            self.set_button_commands()
+            self.grid_buttons()
+        self.grid_arrows()
+        self.indicate_oob()
+        return mover
+    #
+    # self.add_e = grid_arrow_factory(orientation='E', function='+')
+
+
+
+
+
+
+
 
     def add_n(self):
         self.grid_NE = (self.grid_NE[0],self.grid_NE[1]-1)
@@ -370,19 +483,19 @@ class Grid(tk.Frame):
         #         x.destroy()
         # self.display_world()
 
-    def add_e(self):
-        self.size = (self.size[0]+1, self.size[1])
-        x = self.size[0]-1
-        for y, button_row in enumerate(self.button_array):
-            w_coord = self.coord_map((x,y))
-            color = self.getcolor(w_coord)
-            button = tk.Button(self.grid_frame, relief="raised", bg=color,
-                               activebackground=color)
-            button_row.append(button)
-        self.set_button_commands()
-        self.grid_buttons()
-        self.grid_arrows()
-        self.indicate_oob()
+    # def add_e(self):
+    #     self.size = (self.size[0]+1, self.size[1])
+    #     x = self.size[0]-1
+    #     for y, button_row in enumerate(self.button_array):
+    #         w_coord = self.coord_map((x,y))
+    #         color = self.getcolor(w_coord)
+    #         button = tk.Button(self.grid_frame, relief="raised", bg=color,
+    #                            activebackground=color)
+    #         button_row.append(button)
+    #     self.set_button_commands()
+    #     self.grid_buttons()
+    #     self.grid_arrows()
+    #     self.indicate_oob()
 
     def add_w(self):
         self.grid_NE = (self.grid_NE[0]-1, self.grid_NE[1])
@@ -552,7 +665,7 @@ class ZoomedCanvas(tk.Canvas):
         x1 = x0 + (small_size[0]*self.pix_size) + 1
         y1 = y0 + (small_size[1]*self.pix_size) + 1
         self.create_rectangle(x0, y0, x1, y1,
-                              fill='', outline='gray', outlinestipple='gray50')
+                              fill='', outline='gray', outlinestipple='gray50', tags='o_box')
 
     def changepix(self, coord, color):
         x, y = coord
