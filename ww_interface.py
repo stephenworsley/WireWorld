@@ -18,6 +18,10 @@ class Grid(tk.Frame):
         self.pack()
         self.grid_frame = tk.Frame(self)
         self.grid_frame.pack(side= 'top')
+        self.controls = tk.Frame(self)
+        self.controls.pack(side='bottom')
+        self.labels = tk.Frame(self.controls)
+        self.labels.pack(side='bottom', fill='x')
         self.zoomed = False
 
         self.palette = colordict
@@ -42,45 +46,45 @@ class Grid(tk.Frame):
 
         self.display_world()
 
-        self.update_button = tk.Button(self, text='Update', command=self.w_update)
+        self.update_button = tk.Button(self.controls, text='Update', command=self.w_update)
         self.update_button.pack(side = 'left')
-        self.run_button = tk.Button(self, text='Run', command=self.click_run, width=5)
+        self.run_button = tk.Button(self.controls, text='Run', command=self.click_run, width=5)
         self.run_button.pack(side = 'left')
         self.running = False
 
-        self.checkpoint_button = tk.Button(self, text='Checkpoint', command=self.checkpoint)
+        self.checkpoint_button = tk.Button(self.controls, text='Checkpoint', command=self.checkpoint)
         self.checkpoint_button.pack(side='left')
-        self.reset_button = tk.Button(self, text= 'Reset', command=self.reset)
+        self.reset_button = tk.Button(self.controls, text= 'Reset', command=self.reset)
         self.reset_button.pack(side='left')
         self.cache = None
-        self.clear_button = tk.Button(self, text='Clear', command=self.clear)
+        self.clear_button = tk.Button(self.controls, text='Clear', command=self.clear)
         self.clear_button.pack(side='left')
+
         self.delay = tk.IntVar()
         self.delay.set(500)
-        self.delay_entry = tk.Entry(textvariable=self.delay, width=6)
-        self.delay_label = tk.Label(text='Delay')
+        self.delay_entry = tk.Entry(self.labels, textvariable=self.delay, width=6)
+        self.delay_label = tk.Label(self.labels, text='Delay')
         self.delay_label.pack(side='left')
         self.delay_entry.pack(side='left')
-        self.livecellcount = tk.Label(text='Number of live cells: ')
+        self.livecellcount = tk.Label(self.labels, text='Number of live cells: ')
         self.livecellcount.pack(side='left')
-        self.spansize = tk.Label(text='Horizontal span:  Vertical span: ')
+        self.spansize = tk.Label(self.labels, text='Horizontal span:  Vertical span: ')
         self.spansize.pack(side='left')
         self.cellcountupdate()
         self.stepcount = tk.IntVar(0)
-        self.steps = tk.Label(text='steps: {}'.format(self.stepcount.get()))
+        self.steps = tk.Label(self.labels, text='steps: {}'.format(self.stepcount.get()))
         self.steps.pack(side='right')
         self.stepcount.trace('w', self.stepchange)
         self.stepcache = 0
 
-        self.file_button = tk.Button(self, text='Load/Save', command=self.open_file_window)
+        self.file_button = tk.Button(self.controls, text='Load/Save', command=self.open_file_window)
         self.file_button.pack(side='right')
-        self.p_switch = tk.Button(self, text='Night mode', command=self.n_mode)
+        self.p_switch = tk.Button(self.controls, text='Night mode', command=self.n_mode)
         self.p_switch.pack(side='right')
-        self.random_button = tk.Button(self, text='Become random', command=self.becomerandom)
+        self.random_button = tk.Button(self.controls, text='Become random', command=self.becomerandom)
         self.random_button.pack(side='right')
-        self.zoom_button = tk.Button(self, text='Zoom out', command=self.zoom_out)
+        self.zoom_button = tk.Button(self.controls, text='Zoom out', command=self.zoom_out)
         self.zoom_button.pack(side='right')
-
 
         self.add_n = self.grid_arrow_factory(orientation='N', function='+')
         self.add_e = self.grid_arrow_factory(orientation='E', function='+')
@@ -90,7 +94,6 @@ class Grid(tk.Frame):
         self.del_e = self.grid_arrow_factory(orientation='E', function='-')
         self.del_w = self.grid_arrow_factory(orientation='W', function='-')
         self.del_s = self.grid_arrow_factory(orientation='S', function='-')
-
         self.grb_na.config(command=self.add_n)
         self.grb_ea.config(command=self.add_e)
         self.grb_wa.config(command=self.add_w)
@@ -99,6 +102,35 @@ class Grid(tk.Frame):
         self.grb_ed.config(command=self.del_e)
         self.grb_wd.config(command=self.del_w)
         self.grb_sd.config(command=self.del_s)
+
+        self.d_pad = tk.Frame(self)
+        self.movement = tk.IntVar()
+        self.movement.set(1)
+        self.movement_entry = tk.Entry(self.d_pad, textvariable=self.movement, width=3)
+        self.movement_entry.grid(row=1, column=1)
+        self.d_pad.pack(side='top')
+        self.d_N = tk.Button(self.d_pad, text='N')
+        self.d_N.grid(row=0, column=1)
+        self.d_E = tk.Button(self.d_pad, text='E')
+        self.d_E.grid(row=1, column=2, sticky='W')
+        self.d_W = tk.Button(self.d_pad, text='W')
+        self.d_W.grid(row=1, column=0)
+        self.d_S = tk.Button(self.d_pad, text='S')
+        self.d_S.grid(row=2, column=1)
+        self.zoom_locked = tk.IntVar()
+        self.zoom_lock = tk.Checkbutton(self.d_pad, text='Zoom lock', variable=self.zoom_locked,
+                                        onvalue=1, offvalue=0)
+        self.zoom_lock.grid(row=2, column=2, columnspan=2)
+
+        self.move_N = self.move_factory('N')
+        self.move_E = self.move_factory('E')
+        self.move_W = self.move_factory('W')
+        self.move_S = self.move_factory('S')
+        self.d_N.config(command=self.move_N)
+        self.d_E.config(command=self.move_E)
+        self.d_W.config(command=self.move_W)
+        self.d_S.config(command=self.move_S)
+
 
     def coord_map(self, coord, reversed=False):
         '''Maps from a coordinate on the button array to a coordinate on the world.'''
@@ -533,6 +565,46 @@ class Grid(tk.Frame):
             self.grid_arrows()
             self.indicate_oob()
         return mover
+
+    def move_factory(self, orientation):
+        def move():
+            zoom_locked = self.zoom_locked.get()
+            try:
+                movement = self.movement.get()
+            except:
+                return
+            if self.zoomed and zoom_locked == 1:
+                    move_dict = {'N': (0,-1), 'E': (1,0),
+                                 'W': (-1,0), 'S': (0,1)}
+                    move_vector =  move_dict[orientation]
+                    self.grid_NW = (self.grid_NW[0] + move_vector[0]*movement,
+                                    self.grid_NW[1] + move_vector[1]*movement)
+                    self.zc.box_grid(self)
+            else:
+                adder, remover = self.get_arrows(orientation)
+                if type(movement) is not int:
+                    return
+                for x in range(movement):
+                    adder()
+                    remover()
+        return move
+
+    def get_arrows(self, orientation):
+        if orientation == 'N':
+            adder = self.add_n
+            remover = self.del_s
+        elif orientation == 'E':
+            adder = self.add_e
+            remover = self.del_w
+        elif orientation == 'W':
+            adder = self.add_w
+            remover = self.del_e
+        elif orientation == 'S':
+            adder = self.add_s
+            remover = self.del_n
+        else:
+            raise Exception('Bad orientation')
+        return adder, remover
 
     def palette_switch(self, palette):
         '''
