@@ -196,7 +196,7 @@ class World:
     def trim(self):
         '''Removes all cells containing zeroes.'''
         for coord, state in self.grid.copy().items():
-            if state == 0 or (self.CA_type == 'random' and (max(coord)>100 or min(coord)<-100)):
+            if state == 0 or (self.CA_type == 'random' and (max(coord)>120 or min(coord)<-120)):
                 del self.grid[coord]
 
     def getcoordstate(self, coord):

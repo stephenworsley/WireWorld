@@ -25,9 +25,8 @@ class Grid(tk.Frame):
             self.size = world.size
         else:
             self.size = size
-        self.grid_NE = (0,0) # TODO should be NW
+        self.grid_NW = (0, 0)
         self.world = world
-
 
         self.grb_na = tk.Button(self.grid_frame, text='+')
         self.grb_ea = tk.Button(self.grid_frame, text='+')
@@ -106,7 +105,7 @@ class Grid(tk.Frame):
         if self.zoomed:
             NW = self.zoomed_NW
         else:
-            NW = self.grid_NE
+            NW = self.grid_NW
         if reversed:
             new_coord = (coord[0]-NW[0], coord[1]-NW[1])
         else:
@@ -167,7 +166,7 @@ class Grid(tk.Frame):
             NW = self.zoomed_NW
         else:
             size = self.size
-            NW = self.grid_NE
+            NW = self.grid_NW
         xb_min, yb_min = NW
         xb_max = xb_min + size[0] -1
         yb_max = yb_min + size[1] -1
@@ -243,7 +242,7 @@ class Grid(tk.Frame):
             NW = self.zoomed_NW
         else:
             size = self.size
-            NW = self.grid_NE
+            NW = self.grid_NW
 
         # We loop through the minimal number of cells in order to refresh,
         # either all the displayed cells or all the changed cells.
@@ -393,6 +392,7 @@ class Grid(tk.Frame):
             else:
                 span = 1
 
+            # change the size of the displayed area
             if function == '+':
                 delta = 1
             elif function == '-':
@@ -406,25 +406,25 @@ class Grid(tk.Frame):
                 if self.zoomed:
                     self.zoomed_size = (self.zoomed_size[0], self.zoomed_size[1] + delta*span)
                 if orientation == 'N':
-                    self.grid_NE = (self.grid_NE[0], self.grid_NE[1] - delta)
+                    self.grid_NW = (self.grid_NW[0], self.grid_NW[1] - delta)
                     if self.zoomed:
                         self.zoomed_NW = (self.zoomed_NW[0], self.zoomed_NW[1] - delta*span)
-
             elif orientation == 'E' or orientation == 'W':
                 self.size = (self.size[0] + delta, self.size[1])
                 if self.zoomed:
                     self.zoomed_size = (self.zoomed_size[0] + delta*span, self.zoomed_size[1])
                 if orientation == 'W':
-                    self.grid_NE = (self.grid_NE[0] - delta, self.grid_NE[1])
+                    self.grid_NW = (self.grid_NW[0] - delta, self.grid_NW[1])
                     if self.zoomed:
                         self.zoomed_NW = (self.zoomed_NW[0] - delta*span, self.zoomed_NW[1])
-
             if self.zoomed:
                 # expand the canvas
                 self.zc.config(width=self.zoomed_size[0]*2, height=self.zoomed_size[1]*2)
                 size = self.zoomed_size
             else:
                 size = self.size
+
+            # add or remove rows or columns
             if function == '+':
                 if orientation == 'N' or orientation == 'S':
                     if self.zoomed and orientation == 'N':
@@ -461,7 +461,6 @@ class Grid(tk.Frame):
                 if orientation == 'E' or orientation == 'W':
                     if self.zoomed and orientation == 'W':
                         self.zc.move('all', span*self.zc.pix_size, 0)
-
                     rows = []
                     for y in range(size[1]):
                         row = []
@@ -492,7 +491,6 @@ class Grid(tk.Frame):
                         for display_row, extra_row in zip(display_array, rows):
                             for x in reversed(extra_row):
                                 display_row.insert(0,x)
-
             if function == '-':
                 if self.zoomed:
                     display_object = self.zc.pixel_array
@@ -527,7 +525,9 @@ class Grid(tk.Frame):
                 if self.zoomed and orientation == 'W':
                     self.zc.move('all', -span*self.zc.pix_size, 0)
 
-            if not self.zoomed:
+            if self.zoomed:
+                self.zc.box_grid(self)
+            else:
                 self.set_button_commands()
                 self.grid_buttons()
             self.grid_arrows()
@@ -561,17 +561,18 @@ class Grid(tk.Frame):
         self.refresh()
 
     def zoom_out(self):
-
+        '''Replaces the button array with a zoomed out canvas.'''
+        self.zoomed_NW = (self.grid_NW[0] - self.size[0] * 7, self.grid_NW[1] - self.size[1] * 7)
         self.zc = ZoomedCanvas(master=self.grid_frame, grid=self)
         self.zoom_button.config(text='Zoom in', command=self.zoom_in)
         self.zc.grid(row=2, column=2, rowspan=self.size[1], columnspan=self.size[0])
         self.destroy_buttons()
-        self.zoomed_NW = self.zc.NW
         self.zoomed_size = (self.zc.width, self.zc.height)
         self.zoomed = True
         self.refresh()
 
     def zoom_in(self):
+        '''Replaces the canvas with a zoomed in button array.'''
         self.zc.destroy()
         self.zoom_button.config(text='Zoom out', command=self.zoom_out)
         self.zoomed = False
@@ -582,22 +583,25 @@ class Grid(tk.Frame):
 
 
 class ZoomedCanvas(tk.Canvas):
+    '''A canvas containing a zoomed out view of the CA.'''
     def __init__(self, master=None, NW=None, width=None, height=None, grid=None):
         if grid is None:
-            self.NW = NW
+            # self.NW = NW
             self.width = width
             self.height = height
         else:
-            self.NW = (grid.grid_NE[0] - grid.size[0] * 7, grid.grid_NE[1] - grid.size[1] * 7)
+            # self.NW = (grid.grid_NW[0] - grid.size[0] * 7, grid.grid_NW[1] - grid.size[1] * 7)
             self.width = grid.size[0]*14
             self.height = grid.size[1]*14
         self.pix_size = 2 # set the size of the pixekls/cells
         super().__init__(master, width=self.width * self.pix_size, height=self.height * self.pix_size)
 
         self.setpixels()
-        # self.setoriginbox(self.NW, grid.grid_NE, grid.size)
+        self.o_box = None
+        self.box_grid(grid)
 
     def setpixels(self):
+        '''fill the canvas with pixels to be edited later.'''
         self.pixel_array = []
         for y in range(self.height):
             row = []
@@ -607,15 +611,26 @@ class ZoomedCanvas(tk.Canvas):
                 row.append(rec)
             self.pixel_array.append(row)
 
-    def setoriginbox(self, big_NE, small_NE, small_size):
-        x0 = (small_NE[0]-big_NE[0])*self.pix_size - 1
-        y0 = (small_NE[1]-big_NE[1])*self.pix_size - 1
+    def setoriginbox(self, big_NW, small_NW, small_size):
+        '''Creates a box at the given coordinates.'''
+        x0 = (small_NW[0]-big_NW[0])*self.pix_size - 1
+        y0 = (small_NW[1]-big_NW[1])*self.pix_size - 1
         x1 = x0 + (small_size[0]*self.pix_size) + 1
         y1 = y0 + (small_size[1]*self.pix_size) + 1
-        self.create_rectangle(x0, y0, x1, y1,
-                              fill='', outline='gray', outlinestipple='gray50', tags='o_box')
+        if self.o_box is None:
+            self.o_box = self.create_rectangle(x0, y0, x1, y1,
+                                               fill='', outline='gray', outlinestipple='gray50', tags='o_box')
+        else:
+            self.coords('o_box', x0, y0, x1, y1)
+            self.lift('o_box')
+
+    def box_grid(self, grid):
+        '''Sets the box to be around the zoomed in part.'''
+        self.setoriginbox(grid.zoomed_NW, grid.grid_NW, grid.size)
+
 
     def changepix(self, coord, color):
+        '''Sets the color of a pixel at a given coordinate.'''
         x, y = coord
         pix_ID = self.pixel_array[y][x]
         self.itemconfig(pix_ID, outline=color)
