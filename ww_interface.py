@@ -41,6 +41,7 @@ class Grid(tk.Frame):
         self.stop_button.grid(row=1, column=0)
         self.mode_label = tk.Label(self.copy_paste_frame, text='Current mode: Edit')
         self.mode_label.grid(row=2, column=0, columnspan=3)
+        self.first_coord = None
 
 
         self.palette = colordict
@@ -722,16 +723,25 @@ class Grid(tk.Frame):
             action = lambda: None
         return action
 
-    def copy_action(self, w_coord):
+    def copy_action(self):
         return
 
-    def paste_action(self, w_coord):
+    def paste_action(self):
         return
 
-    def erase_action(self, w_coord):
+    def erase_action(self):
         return
 
     def first_copy(self, w_coord):
+        last_w_coord = self.first_coord
+        if last_w_coord is not None:
+            last_coord = self.coord_map(last_w_coord, reversed=True)
+            lx, ly = last_coord
+            self.button_array[ly][lx].config(bitmap='')
+        self.first_coord = w_coord
+        coord = self.coord_map(w_coord, reversed=True)
+        x, y = coord
+        self.button_array[y][x].config(bitmap='gray50', fg='green')
         return
 
     def second_copy(self, w_coord):
