@@ -24,6 +24,25 @@ class Grid(tk.Frame):
         self.labels.pack(side='bottom', fill='x')
         self.zoomed = False
 
+        self.copy_paste_frame = tk.Frame(self)
+        self.copy_paste_frame.pack(side='right')
+        self.copy_stage = None
+        self.paste_stage = None
+        self.erase_stage = None
+        self.copy_button = tk.Button(self.copy_paste_frame, text='Copy', command= self.begin_copy)
+        self.copy_button.grid(row=0, column=0)
+        self.paste_button = tk.Button(self.copy_paste_frame, text='Paste', command=self.begin_paste)
+        self.paste_button.grid(row=0, column=1)
+        self.erase_button = tk.Button(self.copy_paste_frame, text='Erase', command=self.begin_erase)
+        self.erase_button.grid(row=0, column=2)
+        self.confirm_button = tk.Button(self.copy_paste_frame, text='Confirm', command=self.confirm)
+        self.confirm_button.grid(row=1, column=2)
+        self.stop_button = tk.Button(self.copy_paste_frame, text='Stop', command=self.stop_copy_paste)
+        self.stop_button.grid(row=1, column=0)
+        self.mode_label = tk.Label(self.copy_paste_frame, text='Current mode: Edit')
+        self.mode_label.grid(row=2, column=0, columnspan=3)
+
+
         self.palette = colordict
         if size is None:
             self.size = world.size
@@ -42,7 +61,6 @@ class Grid(tk.Frame):
         self.grb_sd = tk.Button(self.grid_frame, text='-')
         self.default_color_bg = self.grb_na.cget('background')
         self.default_color_abg = self.grb_na.cget('activebackground')
-
 
         self.display_world()
 
@@ -247,12 +265,23 @@ class Grid(tk.Frame):
         button = self.button_array[y][x]
         def command():
             w_coord = self.coord_map(coord)
-            self.world.editpoint(w_coord)
-            color = self.getcolor(w_coord)
-            button.config(bg=color, activebackground=color)
-            self.world_bounds = self.world.getbounds()
-            self.cellcountupdate()
-            self.stepcount.set(0)
+            if self.copy_stage == 1:
+                self.first_copy(w_coord)
+            elif self.copy_stage == 2 or self.copy_stage == 3:
+                self.second_copy(w_coord)
+            elif self.paste_stage == 1 or self.paste_stage == 2:
+                self.first_paste(w_coord)
+            elif self.erase_stage == 1:
+                self.first_erase(w_coord)
+            elif self.erase_stage == 2 or self.erase_stage == 3:
+                self.second_erase(w_coord)
+            else:
+                self.world.editpoint(w_coord)
+                color = self.getcolor(w_coord)
+                button.config(bg=color, activebackground=color)
+                self.world_bounds = self.world.getbounds()
+                self.cellcountupdate()
+                self.stepcount.set(0)
         return command
 
     def set_button_commands(self):
@@ -567,6 +596,7 @@ class Grid(tk.Frame):
         return mover
 
     def move_factory(self, orientation):
+        '''Return a function which moves the display window.'''
         def move():
             zoom_locked = self.zoom_locked.get()
             try:
@@ -634,6 +664,7 @@ class Grid(tk.Frame):
 
     def zoom_out(self):
         '''Replaces the button array with a zoomed out canvas.'''
+        self.reset_stage()
         self.zoomed_NW = (self.grid_NW[0] - self.size[0] * 7, self.grid_NW[1] - self.size[1] * 7)
         self.zc = ZoomedCanvas(master=self.grid_frame, grid=self)
         self.zoom_button.config(text='Zoom in', command=self.zoom_in)
@@ -651,7 +682,69 @@ class Grid(tk.Frame):
         self.display_world()
         self.refresh()
 
+    def reset_stage(self):
+        self.copy_stage = None
+        self.paste_stage = None
+        self.erase_stage = None
 
+    def stop_copy_paste(self):
+        self.reset_stage()
+        self.mode_label.config(text='Current mode: Edit')
+
+
+    def begin_copy(self):
+        self.reset_stage()
+        self.copy_stage = 1
+        self.mode_label.config(text='Current mode: Copy')
+
+    def begin_paste(self):
+        self.reset_stage()
+        self.paste_stage = 1
+        self.mode_label.config(text='Current mode: Paste')
+
+    def begin_erase(self):
+        self.reset_stage()
+        self.erase_stage = 1
+        self.mode_label.config(text='Current mode: Erase')
+
+    def confirm(self):
+        action = self.get_action()
+        action()
+
+    def get_action(self):
+        if self.copy_stage == 3:
+            action = self.copy_action
+        elif self.paste_stage == 2:
+            action = self.paste_action
+        elif self.erase_stage == 3:
+            action = self.erase_action
+        else:
+            action = lambda: None
+        return action
+
+    def copy_action(self, w_coord):
+        return
+
+    def paste_action(self, w_coord):
+        return
+
+    def erase_action(self, w_coord):
+        return
+
+    def first_copy(self, w_coord):
+        return
+
+    def second_copy(self, w_coord):
+        return
+
+    def first_paste(self, w_coord):
+        return
+
+    def first_erase(self, w_coord):
+        return
+
+    def second_erase(self, w_coord):
+        return
 
 
 class ZoomedCanvas(tk.Canvas):
