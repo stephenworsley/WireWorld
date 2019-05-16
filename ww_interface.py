@@ -668,7 +668,7 @@ class Grid(tk.Frame):
 
     def zoom_out(self):
         '''Replaces the button array with a zoomed out canvas.'''
-        self.reset_stage()
+        self.stop_copy_paste()
         self.zoomed_NW = (self.grid_NW[0] - self.size[0] * 7, self.grid_NW[1] - self.size[1] * 7)
         self.zc = ZoomedCanvas(master=self.grid_frame, grid=self)
         self.zoom_button.config(text='Zoom in', command=self.zoom_in)
@@ -705,12 +705,14 @@ class Grid(tk.Frame):
         second_w = self.second_coord
         if first_w is not None:
             last_coord = self.coord_map(first_w, reversed=True)
-            lx, ly = last_coord
-            self.button_array[ly][lx].config(bitmap='')
+            if self.is_in_grid(last_coord):
+                lx, ly = last_coord
+                self.button_array[ly][lx].config(bitmap='')
         if second_w is not None:
             last_coord = self.coord_map(second_w, reversed=True)
-            lx, ly = last_coord
-            self.button_array[ly][lx].config(bitmap='')
+            if self.is_in_grid(last_coord):
+                lx, ly = last_coord
+                self.button_array[ly][lx].config(bitmap='')
         self.mode_label.config(text='Current mode: Edit')
 
 
@@ -762,8 +764,9 @@ class Grid(tk.Frame):
         last_w_coord = self.first_coord
         if last_w_coord is not None:
             last_coord = self.coord_map(last_w_coord, reversed=True)
-            lx, ly = last_coord
-            self.button_array[ly][lx].config(bitmap='')
+            if self.is_in_grid(last_coord):
+                lx, ly = last_coord
+                self.button_array[ly][lx].config(bitmap='')
         self.first_coord = w_coord
         coord = self.coord_map(w_coord, reversed=True)
         x, y = coord
@@ -774,11 +777,12 @@ class Grid(tk.Frame):
         last_w_coord = self.second_coord
         if last_w_coord is not None:
             last_coord = self.coord_map(last_w_coord, reversed=True)
-            lx, ly = last_coord
-            if last_w_coord == self.first_coord:
-                self.button_array[ly][lx].config(bitmap='gray75')
-            else:
-                self.button_array[ly][lx].config(bitmap='')
+            if self.is_in_grid(last_coord):
+                lx, ly = last_coord
+                if last_w_coord == self.first_coord:
+                    self.button_array[ly][lx].config(bitmap='gray75')
+                else:
+                    self.button_array[ly][lx].config(bitmap='')
         self.second_coord = w_coord
         coord = self.coord_map(w_coord, reversed=True)
         x, y = coord
@@ -791,37 +795,39 @@ class Grid(tk.Frame):
         last_w_coord = self.first_coord
         if last_w_coord is not None:
             last_coord = self.coord_map(last_w_coord, reversed=True)
-            lx, ly = last_coord
-            self.button_array[ly][lx].config(bitmap='')
+            if self.is_in_grid(last_coord):
+                lx, ly = last_coord
+                self.button_array[ly][lx].config(bitmap='')
         self.first_coord = w_coord
         coord = self.coord_map(w_coord, reversed=True)
         x, y = coord
         self.button_array[y][x].config(bitmap='gray75', fg='green')
         self.paste_stage = 2
-        if self.world.copy_section is not None:
-            self.preview_paste(coord)
+        self.preview_paste(coord)
 
     def preview_paste(self, origin_coord):
-        top_left = (origin_coord[0] + self.world.copy_section.offset[0],
-                    origin_coord[1] + self.world.copy_section.offset[1])
-        for dy, row in enumerate(self.world.copy_section.state_array):
-            for dx, state in enumerate(row):
-                coord = (top_left[0] + dx, top_left[1] + dy)
-                if self.is_in_grid(coord):
-                    if state is None:
-                        display_state = 0
-                    else:
-                        display_state = state
-                    color = self.palette[display_state]
-                    x, y = coord
-                    self.button_array[y][x].config(bg=color, activebackground=color)
+        if self.world.copy_section is not None:
+            top_left = (origin_coord[0] + self.world.copy_section.offset[0],
+                        origin_coord[1] + self.world.copy_section.offset[1])
+            for dy, row in enumerate(self.world.copy_section.state_array):
+                for dx, state in enumerate(row):
+                    coord = (top_left[0] + dx, top_left[1] + dy)
+                    if self.is_in_grid(coord):
+                        if state is None:
+                            display_state = 0
+                        else:
+                            display_state = state
+                        color = self.palette[display_state]
+                        x, y = coord
+                        self.button_array[y][x].config(bg=color, activebackground=color)
 
     def first_erase(self, w_coord):
         last_w_coord = self.first_coord
         if last_w_coord is not None:
             last_coord = self.coord_map(last_w_coord, reversed=True)
-            lx, ly = last_coord
-            self.button_array[ly][lx].config(bitmap='')
+            if self.is_in_grid(last_coord):
+                lx, ly = last_coord
+                self.button_array[ly][lx].config(bitmap='')
         self.first_coord = w_coord
         coord = self.coord_map(w_coord, reversed=True)
         x, y = coord
@@ -832,11 +838,12 @@ class Grid(tk.Frame):
         last_w_coord = self.second_coord
         if last_w_coord is not None:
             last_coord = self.coord_map(last_w_coord, reversed=True)
-            lx, ly = last_coord
-            if last_w_coord == self.first_coord:
-                self.button_array[ly][lx].config(bitmap='gray75')
-            else:
-                self.button_array[ly][lx].config(bitmap='')
+            if self.is_in_grid(last_coord):
+                lx, ly = last_coord
+                if last_w_coord == self.first_coord:
+                    self.button_array[ly][lx].config(bitmap='gray75')
+                else:
+                    self.button_array[ly][lx].config(bitmap='')
         self.second_coord = w_coord
         coord = self.coord_map(w_coord, reversed=True)
         x, y = coord
