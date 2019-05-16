@@ -129,6 +129,7 @@ class World:
             # TODO run checks on content, perhaps reformat
             self.grid = content
         self.changeset = set(self.grid) # This set keeps track of which cells have changed after each update
+        self.copy_section = None # This keeps track of copied sections
 
     def printself(self):
         '''prints a representation of the current state in the console.'''
@@ -247,6 +248,68 @@ class World:
         self.CA_type = 'random'
         for coord, state in self.grid.items():
             self.grid[coord] = state % N
+
+    def save_copy(self, first_coord, second_coord):
+        '''Save the data within the selected region'''
+        self.copy_section = CopySection(self, first_coord, second_coord)
+
+    def paste_copy(self, origin):
+        '''Paste the copied section from the selected point'''
+        if self.copy_section is not None:
+            top_left = (origin[0] + self.copy_section.offset[0], origin[1] + self.copy_section.offset[1])
+            for dy, row in enumerate(self.copy_section.state_array):
+                for dx, state in enumerate(row):
+                    coord = (top_left[0] + dx, top_left[1] + dy)
+                    if state is None:
+                        if coord in self.grid:
+                            del self.grid[coord]
+                    else:
+                        self.grid[coord] = state
+
+    def erase_section(self, first_coord, second_coord):
+        '''Erase all points within the chosen section'''
+        top_left = (min(first_coord[0], second_coord[0]), min(first_coord[1], second_coord[1]))
+        bottom_right = (max(first_coord[0], second_coord[0]), max(first_coord[1], second_coord[1]))
+        for x in range(top_left[0], bottom_right[0] + 1):
+            for y in range(top_left[1], bottom_right[1] + 1):
+                coord = (x,y)
+                if self.CA.mode == 'stable' or self.CA.mode == 'semistable':
+                    if coord in self.grid:
+                        del self.grid[coord]
+                else:
+                    self.grid[coord] = 0
+
+
+class CopySection():
+    '''Keeps track of copied sections'''
+    def __init__(self, world, first_coord, second_coord):
+        self.state_array = self.calculate_state_array(world, first_coord, second_coord)
+        self.offset = self.calculate_offset(first_coord, second_coord)
+
+    def calculate_state_array(self, world, first_coord, second_coord):
+        coord_array = self.calculate_coord_array(first_coord, second_coord)
+        state_array = []
+        for coord_row in coord_array:
+            state_row = []
+            for coord in coord_row:
+                if coord in world.grid:
+                    state = world.grid[coord]
+                else:
+                    state = None
+                state_row.append(state)
+            state_array.append(state_row)
+        return state_array
+
+    def calculate_coord_array(self, first_coord, second_coord):
+        top_left = (min(first_coord[0], second_coord[0]), min(first_coord[1], second_coord[1]))
+        bottom_right = (max(first_coord[0], second_coord[0]), max(first_coord[1], second_coord[1]))
+        array = [[(x,y) for x in range(top_left[0], bottom_right[0]+1)] for y in range(top_left[1], bottom_right[1]+1)]
+        return array
+
+    def calculate_offset(self, first_coord, second_coord):
+        top_left = (min(first_coord[0], second_coord[0]), min(first_coord[1], second_coord[1]))
+        offset = (top_left[0] - first_coord[0], top_left[1] - first_coord[1])
+        return offset
 
 
 #TODO add these as mothods for World

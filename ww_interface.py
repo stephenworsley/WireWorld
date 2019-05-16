@@ -42,7 +42,8 @@ class Grid(tk.Frame):
         self.mode_label = tk.Label(self.copy_paste_frame, text='Current mode: Edit')
         self.mode_label.grid(row=2, column=0, columnspan=3)
         self.first_coord = None
-
+        self.second_coord = None
+        # self.copy_section = None # keep this saved in world object maybe
 
         self.palette = colordict
         if size is None:
@@ -594,6 +595,8 @@ class Grid(tk.Frame):
                 self.grid_buttons()
             self.grid_arrows()
             self.indicate_oob()
+            if self.paste_stage == 2 and function == '+':
+                self.preview_paste(self.first_coord)
         return mover
 
     def move_factory(self, orientation):
@@ -683,13 +686,31 @@ class Grid(tk.Frame):
         self.display_world()
         self.refresh()
 
+    def is_in_grid(self, coord):
+        if coord[0] < 0 or coord[1] < 0 or coord[0] >= self.size[0] or coord[1] >= self.size[1]:
+            return False
+        else:
+            return True
+
     def reset_stage(self):
+        if self.paste_stage == 2:
+            self.refresh()
         self.copy_stage = None
         self.paste_stage = None
         self.erase_stage = None
 
     def stop_copy_paste(self):
         self.reset_stage()
+        first_w = self.first_coord
+        second_w = self.second_coord
+        if first_w is not None:
+            last_coord = self.coord_map(first_w, reversed=True)
+            lx, ly = last_coord
+            self.button_array[ly][lx].config(bitmap='')
+        if second_w is not None:
+            last_coord = self.coord_map(second_w, reversed=True)
+            lx, ly = last_coord
+            self.button_array[ly][lx].config(bitmap='')
         self.mode_label.config(text='Current mode: Edit')
 
 
@@ -724,15 +745,20 @@ class Grid(tk.Frame):
         return action
 
     def copy_action(self):
-        return
+        self.world.save_copy(self.first_coord, self.second_coord)
+        self.stop_copy_paste()
 
     def paste_action(self):
-        return
+        self.world.paste_copy(self.first_coord)
+        self.stop_copy_paste()
+        self.refresh()
 
     def erase_action(self):
-        return
+        self.world.erase_section(self.first_coord, self.second_coord)
+        self.stop_copy_paste()
+        self.refresh()
 
-    def first_copy(self, w_coord):
+    def first_copy(self, w_coord): # TODO make the button size uniform somehow, or maybe it's a feature
         last_w_coord = self.first_coord
         if last_w_coord is not None:
             last_coord = self.coord_map(last_w_coord, reversed=True)
@@ -741,20 +767,81 @@ class Grid(tk.Frame):
         self.first_coord = w_coord
         coord = self.coord_map(w_coord, reversed=True)
         x, y = coord
-        self.button_array[y][x].config(bitmap='gray50', fg='green')
-        return
+        self.button_array[y][x].config(bitmap='gray75', fg='green')
+        self.copy_stage = 2
 
     def second_copy(self, w_coord):
-        return
+        last_w_coord = self.second_coord
+        if last_w_coord is not None:
+            last_coord = self.coord_map(last_w_coord, reversed=True)
+            lx, ly = last_coord
+            if last_w_coord == self.first_coord:
+                self.button_array[ly][lx].config(bitmap='gray75')
+            else:
+                self.button_array[ly][lx].config(bitmap='')
+        self.second_coord = w_coord
+        coord = self.coord_map(w_coord, reversed=True)
+        x, y = coord
+        self.button_array[y][x].config(bitmap='gray25', fg='green')
+        self.copy_stage = 3
 
     def first_paste(self, w_coord):
-        return
+        if self.paste_stage == 2:
+            self.refresh()
+        last_w_coord = self.first_coord
+        if last_w_coord is not None:
+            last_coord = self.coord_map(last_w_coord, reversed=True)
+            lx, ly = last_coord
+            self.button_array[ly][lx].config(bitmap='')
+        self.first_coord = w_coord
+        coord = self.coord_map(w_coord, reversed=True)
+        x, y = coord
+        self.button_array[y][x].config(bitmap='gray75', fg='green')
+        self.paste_stage = 2
+        if self.world.copy_section is not None:
+            self.preview_paste(coord)
+
+    def preview_paste(self, origin_coord):
+        top_left = (origin_coord[0] + self.world.copy_section.offset[0],
+                    origin_coord[1] + self.world.copy_section.offset[1])
+        for dy, row in enumerate(self.world.copy_section.state_array):
+            for dx, state in enumerate(row):
+                coord = (top_left[0] + dx, top_left[1] + dy)
+                if self.is_in_grid(coord):
+                    if state is None:
+                        display_state = 0
+                    else:
+                        display_state = state
+                    color = self.palette[display_state]
+                    x, y = coord
+                    self.button_array[y][x].config(bg=color, activebackground=color)
 
     def first_erase(self, w_coord):
-        return
+        last_w_coord = self.first_coord
+        if last_w_coord is not None:
+            last_coord = self.coord_map(last_w_coord, reversed=True)
+            lx, ly = last_coord
+            self.button_array[ly][lx].config(bitmap='')
+        self.first_coord = w_coord
+        coord = self.coord_map(w_coord, reversed=True)
+        x, y = coord
+        self.button_array[y][x].config(bitmap='gray75', fg='green')
+        self.erase_stage = 2
 
     def second_erase(self, w_coord):
-        return
+        last_w_coord = self.second_coord
+        if last_w_coord is not None:
+            last_coord = self.coord_map(last_w_coord, reversed=True)
+            lx, ly = last_coord
+            if last_w_coord == self.first_coord:
+                self.button_array[ly][lx].config(bitmap='gray75')
+            else:
+                self.button_array[ly][lx].config(bitmap='')
+        self.second_coord = w_coord
+        coord = self.coord_map(w_coord, reversed=True)
+        x, y = coord
+        self.button_array[y][x].config(bitmap='gray25', fg='green')
+        self.erase_stage = 3
 
 
 class ZoomedCanvas(tk.Canvas):
