@@ -1,6 +1,6 @@
 import wireworld as ww
 import tkinter as tk
-from tkinter import  messagebox
+from tkinter import messagebox
 import copy
 
 
@@ -17,7 +17,7 @@ class Grid(tk.Frame):
         super().__init__(master)
         self.pack()
         self.grid_frame = tk.Frame(self)
-        self.grid_frame.pack(side= 'top')
+        self.grid_frame.pack(side='top')
         self.controls = tk.Frame(self)
         self.controls.pack(side='bottom')
         self.labels = tk.Frame(self.controls)
@@ -29,7 +29,7 @@ class Grid(tk.Frame):
         self.copy_stage = None
         self.paste_stage = None
         self.erase_stage = None
-        self.copy_button = tk.Button(self.copy_paste_frame, text='Copy', command= self.begin_copy)
+        self.copy_button = tk.Button(self.copy_paste_frame, text='Copy', command=self.begin_copy)
         self.copy_button.grid(row=0, column=0)
         self.paste_button = tk.Button(self.copy_paste_frame, text='Paste', command=self.begin_paste)
         self.paste_button.grid(row=0, column=1)
@@ -67,14 +67,14 @@ class Grid(tk.Frame):
         self.display_world()
 
         self.update_button = tk.Button(self.controls, text='Update', command=self.w_update)
-        self.update_button.pack(side = 'left')
+        self.update_button.pack(side='left')
         self.run_button = tk.Button(self.controls, text='Run', command=self.click_run, width=5)
-        self.run_button.pack(side = 'left')
+        self.run_button.pack(side='left')
         self.running = False
 
         self.checkpoint_button = tk.Button(self.controls, text='Checkpoint', command=self.checkpoint)
         self.checkpoint_button.pack(side='left')
-        self.reset_button = tk.Button(self.controls, text= 'Reset', command=self.reset)
+        self.reset_button = tk.Button(self.controls, text='Reset', command=self.reset)
         self.reset_button.pack(side='left')
         self.cache = None
         self.clear_button = tk.Button(self.controls, text='Clear', command=self.clear)
@@ -106,14 +106,14 @@ class Grid(tk.Frame):
         self.zoom_button = tk.Button(self.controls, text='Zoom out', command=self.zoom_out)
         self.zoom_button.pack(side='right')
 
-        self.add_n = self.grid_arrow_factory(orientation='N', function='+')
-        self.add_e = self.grid_arrow_factory(orientation='E', function='+')
-        self.add_w = self.grid_arrow_factory(orientation='W', function='+')
-        self.add_s = self.grid_arrow_factory(orientation='S', function='+')
-        self.del_n = self.grid_arrow_factory(orientation='N', function='-')
-        self.del_e = self.grid_arrow_factory(orientation='E', function='-')
-        self.del_w = self.grid_arrow_factory(orientation='W', function='-')
-        self.del_s = self.grid_arrow_factory(orientation='S', function='-')
+        self.add_n = self.grid_arrow_factory(orientation='N', operation='+')
+        self.add_e = self.grid_arrow_factory(orientation='E', operation='+')
+        self.add_w = self.grid_arrow_factory(orientation='W', operation='+')
+        self.add_s = self.grid_arrow_factory(orientation='S', operation='+')
+        self.del_n = self.grid_arrow_factory(orientation='N', operation='-')
+        self.del_e = self.grid_arrow_factory(orientation='E', operation='-')
+        self.del_w = self.grid_arrow_factory(orientation='W', operation='-')
+        self.del_s = self.grid_arrow_factory(orientation='S', operation='-')
         self.grb_na.config(command=self.add_n)
         self.grb_ea.config(command=self.add_e)
         self.grb_wa.config(command=self.add_w)
@@ -151,17 +151,16 @@ class Grid(tk.Frame):
         self.d_W.config(command=self.move_W)
         self.d_S.config(command=self.move_S)
 
-
-    def coord_map(self, coord, reversed=False):
+    def coord_map(self, coord, backwards=False):
         '''Maps from a coordinate on the button array to a coordinate on the world.'''
         if self.zoomed:
-            NW = self.zoomed_NW
+            nw = self.zoomed_NW
         else:
-            NW = self.grid_NW
-        if reversed:
-            new_coord = (coord[0]-NW[0], coord[1]-NW[1])
+            nw = self.grid_NW
+        if backwards:
+            new_coord = (coord[0]-nw[0], coord[1]-nw[1])
         else:
-            new_coord = (coord[0]+NW[0], coord[1]+NW[1])
+            new_coord = (coord[0]+nw[0], coord[1]+nw[1])
         return new_coord
 
     def display_world(self):
@@ -170,7 +169,7 @@ class Grid(tk.Frame):
         for y in range(self.size[1]):
             row = []
             for x in range(self.size[0]):
-                w_coord = self.coord_map((x,y))
+                w_coord = self.coord_map((x, y))
                 color = self.getcolor(w_coord)
                 button = tk.Button(self.grid_frame, relief="raised", bg=color,
                                    activebackground=color)
@@ -215,13 +214,13 @@ class Grid(tk.Frame):
         '''Changes the color of the grid arrow buttons to indicate the presence of live cells out of bounds.'''
         if self.zoomed:
             size = self.zoomed_size
-            NW = self.zoomed_NW
+            nw = self.zoomed_NW
         else:
             size = self.size
-            NW = self.grid_NW
-        xb_min, yb_min = NW
-        xb_max = xb_min + size[0] -1
-        yb_max = yb_min + size[1] -1
+            nw = self.grid_NW
+        xb_min, yb_min = nw
+        xb_max = xb_min + size[0] - 1
+        yb_max = yb_min + size[1] - 1
         if self.world_bounds is None:
             x_range = (xb_min, xb_max)
             y_range = (yb_min, yb_max)
@@ -253,7 +252,7 @@ class Grid(tk.Frame):
         else:
             width = self.world_bounds[0][1] - self.world_bounds[0][0]
             height = self.world_bounds[1][1] - self.world_bounds[1][0]
-        self.spansize.config(text='Horizontal span: {} Vertical span: {}'.format(width,height))
+        self.spansize.config(text='Horizontal span: {} Vertical span: {}'.format(width, height))
 
     def getcolor(self, coord):
         '''Returns the color associated with the specified state.'''
@@ -265,6 +264,7 @@ class Grid(tk.Frame):
         '''Generates a command to update the button in the specified position.'''
         x, y = coord
         button = self.button_array[y][x]
+
         def command():
             w_coord = self.coord_map(coord)
             if self.copy_stage == 1:
@@ -290,40 +290,37 @@ class Grid(tk.Frame):
         '''Assigns the buttons in the grid with the appropriate commands'''
         for y in range(self.size[1]):
             for x in range(self.size[0]):
-                self.button_array[y][x].config(command=self.command_generator((x,y)))
+                self.button_array[y][x].config(command=self.command_generator((x, y)))
 
     # This seems to be one of the bottlenecks for speed, this could be improved by keeping track of which buttons
     # are necessary to update.
     def refresh(self, full=True):
         '''Sets all the appropriate colors to the button grid.'''
-        if full or self.world.CA.mode != 'stable': # wireworld should never add or remove live cells while self updating
+        if full or self.world.CA.mode != 'stable':  # wireworld shouldn't add or remove live cells while self updating
             self.indicate_oob()
             self.cellcountupdate()
 
         if self.zoomed:
             size = self.zoomed_size
-            NW = self.zoomed_NW
         else:
             size = self.size
-            NW = self.grid_NW
 
         # We loop through the minimal number of cells in order to refresh,
         # either all the displayed cells or all the changed cells.
         if full or len(self.world.changeset) > size[0]*size[1]:
             for y in range(size[1]):
                 for x in range(size[0]):
-                    w_coord = self.coord_map((x,y))
+                    w_coord = self.coord_map((x, y))
                     if full or w_coord in self.world.changeset:
                         color = self.getcolor(w_coord)
-                        self.update_color(color, (x,y))
+                        self.update_color(color, (x, y))
         else:
             for coord in self.world.changeset:
                 w_coord = coord
-                x, y = self.coord_map(coord, reversed=True)
+                x, y = self.coord_map(coord, backwards=True)
                 if x >= 0 and x < size[0] and y >= 0 and y < size[1]:
                     color = self.getcolor(w_coord)
                     self.update_color(color, (x, y))
-
 
     def update_color(self, color, coord):
         '''Updates the color of the cell at the chosen coordinate for the current display.'''
@@ -447,7 +444,8 @@ class Grid(tk.Frame):
             messagebox.showerror("Error", str(e))
         self.window.destroy()
 
-    def grid_arrow_factory(self, orientation, function):
+    def grid_arrow_factory(self, orientation, operation):
+        '''Returns a function which will change the size of the display in the appropriate direction.'''
         def mover():
             # set the amount by which to add or subtract
             if self.zoomed:
@@ -456,9 +454,9 @@ class Grid(tk.Frame):
                 span = 1
 
             # change the size of the displayed area
-            if function == '+':
+            if operation == '+':
                 delta = 1
-            elif function == '-':
+            elif operation == '-':
                 if (orientation == 'E' or orientation == 'W') and self.size[0] <= 1:
                     return
                 if (orientation == 'N' or orientation == 'S') and self.size[1] <= 1:
@@ -488,7 +486,7 @@ class Grid(tk.Frame):
                 size = self.size
 
             # add or remove rows or columns
-            if function == '+':
+            if operation == '+':
                 if orientation == 'N' or orientation == 'S':
                     if self.zoomed and orientation == 'N':
                         self.zc.move('all', 0, span*self.zc.pix_size)
@@ -500,7 +498,7 @@ class Grid(tk.Frame):
                         else:
                             y = dy + size[1] - span
                         for x in range(size[0]):
-                            w_coord = self.coord_map((x,y))
+                            w_coord = self.coord_map((x, y))
                             color = self.getcolor(w_coord)
                             if self.zoomed:
                                 display_object = self.zc.create_rectangle(x*self.zc.pix_size, y*self.zc.pix_size,
@@ -553,8 +551,8 @@ class Grid(tk.Frame):
                     elif orientation == 'W':
                         for display_row, extra_row in zip(display_array, rows):
                             for x in reversed(extra_row):
-                                display_row.insert(0,x)
-            if function == '-':
+                                display_row.insert(0, x)
+            if operation == '-':
                 if self.zoomed:
                     display_object = self.zc.pixel_array
                 else:
@@ -595,7 +593,7 @@ class Grid(tk.Frame):
                 self.grid_buttons()
             self.grid_arrows()
             self.indicate_oob()
-            if self.paste_stage == 2 and function == '+':
+            if self.paste_stage == 2 and operation == '+':
                 self.preview_paste(self.first_coord)
         return mover
 
@@ -608,9 +606,9 @@ class Grid(tk.Frame):
             except:
                 return
             if self.zoomed and zoom_locked == 1:
-                    move_dict = {'N': (0,-1), 'E': (1,0),
-                                 'W': (-1,0), 'S': (0,1)}
-                    move_vector =  move_dict[orientation]
+                    move_dict = {'N': (0, -1), 'E': (1, 0),
+                                 'W': (-1, 0), 'S': (0, 1)}
+                    move_vector = move_dict[orientation]
                     self.grid_NW = (self.grid_NW[0] + move_vector[0]*movement,
                                     self.grid_NW[1] + move_vector[1]*movement)
                     self.zc.box_grid(self)
@@ -624,6 +622,7 @@ class Grid(tk.Frame):
         return move
 
     def get_arrows(self, orientation):
+        '''Returns a pair of functions which describe how to move in a given direction.'''
         if orientation == 'N':
             adder = self.add_n
             remover = self.del_s
@@ -687,55 +686,64 @@ class Grid(tk.Frame):
         self.refresh()
 
     def is_in_grid(self, coord):
+        '''Checks if a coordinate is within the bounds of the button_array.'''
+        if coord is None:
+            return False
         if coord[0] < 0 or coord[1] < 0 or coord[0] >= self.size[0] or coord[1] >= self.size[1]:
             return False
         else:
             return True
 
     def reset_stage(self):
+        '''Resets copy/paste state to default.'''
         if self.paste_stage == 2:
             self.refresh()
+        first_w = self.first_coord
+        second_w = self.second_coord
+        if first_w is not None:
+            last_coord = self.coord_map(first_w, backwards=True)
+            if self.is_in_grid(last_coord):
+                lx, ly = last_coord
+                self.button_array[ly][lx].config(bitmap='')
+        if second_w is not None:
+            last_coord = self.coord_map(second_w, backwards=True)
+            if self.is_in_grid(last_coord):
+                lx, ly = last_coord
+                self.button_array[ly][lx].config(bitmap='')
         self.copy_stage = None
         self.paste_stage = None
         self.erase_stage = None
 
     def stop_copy_paste(self):
+        '''Exits copy/paste mode.'''
         self.reset_stage()
-        first_w = self.first_coord
-        second_w = self.second_coord
-        if first_w is not None:
-            last_coord = self.coord_map(first_w, reversed=True)
-            if self.is_in_grid(last_coord):
-                lx, ly = last_coord
-                self.button_array[ly][lx].config(bitmap='')
-        if second_w is not None:
-            last_coord = self.coord_map(second_w, reversed=True)
-            if self.is_in_grid(last_coord):
-                lx, ly = last_coord
-                self.button_array[ly][lx].config(bitmap='')
         self.mode_label.config(text='Current mode: Edit')
 
-
     def begin_copy(self):
+        '''Begins the process of copying.'''
         self.reset_stage()
         self.copy_stage = 1
         self.mode_label.config(text='Current mode: Copy')
 
     def begin_paste(self):
+        '''Begins the process of pasting.'''
         self.reset_stage()
         self.paste_stage = 1
         self.mode_label.config(text='Current mode: Paste')
 
     def begin_erase(self):
+        '''Begins the process of erasing.'''
         self.reset_stage()
         self.erase_stage = 1
         self.mode_label.config(text='Current mode: Erase')
 
     def confirm(self):
+        '''Completes the process of copy/pasting.'''
         action = self.get_action()
         action()
 
     def get_action(self):
+        '''Returns the appropriate copy/paste function to be called.'''
         if self.copy_stage == 3:
             action = self.copy_action
         elif self.paste_stage == 2:
@@ -747,36 +755,41 @@ class Grid(tk.Frame):
         return action
 
     def copy_action(self):
+        '''Saves a copy of the states within a specified area.'''
         self.world.save_copy(self.first_coord, self.second_coord)
         self.stop_copy_paste()
 
     def paste_action(self):
+        '''Copies the saved states to the specified location.'''
         self.world.paste_copy(self.first_coord)
         self.stop_copy_paste()
         self.refresh()
 
     def erase_action(self):
+        '''Sets cell states to 0 or None within specified area.'''
         self.world.erase_section(self.first_coord, self.second_coord)
         self.stop_copy_paste()
         self.refresh()
 
-    def first_copy(self, w_coord): # TODO make the button size uniform somehow, or maybe it's a feature
+    def first_copy(self, w_coord):  # TODO make the button size uniform somehow, or maybe it's a feature
+        '''Sets the first coordinate after the copy process has started.'''
         last_w_coord = self.first_coord
         if last_w_coord is not None:
-            last_coord = self.coord_map(last_w_coord, reversed=True)
+            last_coord = self.coord_map(last_w_coord, backwards=True)
             if self.is_in_grid(last_coord):
                 lx, ly = last_coord
                 self.button_array[ly][lx].config(bitmap='')
         self.first_coord = w_coord
-        coord = self.coord_map(w_coord, reversed=True)
+        coord = self.coord_map(w_coord, backwards=True)
         x, y = coord
         self.button_array[y][x].config(bitmap='gray75', fg='green')
         self.copy_stage = 2
 
     def second_copy(self, w_coord):
+        '''Sets the second coordinate after the copy process has started.'''
         last_w_coord = self.second_coord
         if last_w_coord is not None:
-            last_coord = self.coord_map(last_w_coord, reversed=True)
+            last_coord = self.coord_map(last_w_coord, backwards=True)
             if self.is_in_grid(last_coord):
                 lx, ly = last_coord
                 if last_w_coord == self.first_coord:
@@ -784,28 +797,34 @@ class Grid(tk.Frame):
                 else:
                     self.button_array[ly][lx].config(bitmap='')
         self.second_coord = w_coord
-        coord = self.coord_map(w_coord, reversed=True)
+        coord = self.coord_map(w_coord, backwards=True)
         x, y = coord
         self.button_array[y][x].config(bitmap='gray25', fg='green')
         self.copy_stage = 3
 
     def first_paste(self, w_coord):
+        '''
+        Sets the first coordinate after the paste process has started.
+
+        Also shows a preview of the result.
+        '''
         if self.paste_stage == 2:
             self.refresh()
         last_w_coord = self.first_coord
         if last_w_coord is not None:
-            last_coord = self.coord_map(last_w_coord, reversed=True)
+            last_coord = self.coord_map(last_w_coord, backwards=True)
             if self.is_in_grid(last_coord):
                 lx, ly = last_coord
                 self.button_array[ly][lx].config(bitmap='')
         self.first_coord = w_coord
-        coord = self.coord_map(w_coord, reversed=True)
+        coord = self.coord_map(w_coord, backwards=True)
         x, y = coord
         self.button_array[y][x].config(bitmap='gray75', fg='green')
         self.paste_stage = 2
         self.preview_paste(coord)
 
     def preview_paste(self, origin_coord):
+        '''Shows a preview of the result of confirming the paste action.'''
         if self.world.copy_section is not None:
             top_left = (origin_coord[0] + self.world.copy_section.offset[0],
                         origin_coord[1] + self.world.copy_section.offset[1])
@@ -822,22 +841,24 @@ class Grid(tk.Frame):
                         self.button_array[y][x].config(bg=color, activebackground=color)
 
     def first_erase(self, w_coord):
+        '''Sets the first coordinate after the erase process has started.'''
         last_w_coord = self.first_coord
         if last_w_coord is not None:
-            last_coord = self.coord_map(last_w_coord, reversed=True)
+            last_coord = self.coord_map(last_w_coord, backwards=True)
             if self.is_in_grid(last_coord):
                 lx, ly = last_coord
                 self.button_array[ly][lx].config(bitmap='')
         self.first_coord = w_coord
-        coord = self.coord_map(w_coord, reversed=True)
+        coord = self.coord_map(w_coord, backwards=True)
         x, y = coord
         self.button_array[y][x].config(bitmap='gray75', fg='green')
         self.erase_stage = 2
 
     def second_erase(self, w_coord):
+        '''Sets the second coordinate after the erase process has started.'''
         last_w_coord = self.second_coord
         if last_w_coord is not None:
-            last_coord = self.coord_map(last_w_coord, reversed=True)
+            last_coord = self.coord_map(last_w_coord, backwards=True)
             if self.is_in_grid(last_coord):
                 lx, ly = last_coord
                 if last_w_coord == self.first_coord:
@@ -845,7 +866,7 @@ class Grid(tk.Frame):
                 else:
                     self.button_array[ly][lx].config(bitmap='')
         self.second_coord = w_coord
-        coord = self.coord_map(w_coord, reversed=True)
+        coord = self.coord_map(w_coord, backwards=True)
         x, y = coord
         self.button_array[y][x].config(bitmap='gray25', fg='green')
         self.erase_stage = 3
@@ -853,16 +874,14 @@ class Grid(tk.Frame):
 
 class ZoomedCanvas(tk.Canvas):
     '''A canvas containing a zoomed out view of the CA.'''
-    def __init__(self, master=None, NW=None, width=None, height=None, grid=None):
+    def __init__(self, master=None, width=None, height=None, grid=None):
         if grid is None:
-            # self.NW = NW
             self.width = width
             self.height = height
         else:
-            # self.NW = (grid.grid_NW[0] - grid.size[0] * 7, grid.grid_NW[1] - grid.size[1] * 7)
             self.width = grid.size[0]*14
             self.height = grid.size[1]*14
-        self.pix_size = 2 # set the size of the pixekls/cells
+        self.pix_size = 2  # set the size of the pixels/cells
         super().__init__(master, width=self.width * self.pix_size, height=self.height * self.pix_size)
 
         self.setpixels()
@@ -905,14 +924,15 @@ class ZoomedCanvas(tk.Canvas):
         self.itemconfig(pix_ID, outline=color)
 
 
-
 def example_run():
+    '''Launches the GUI with an example file.'''
     world_file = 'example_06.json'
     world = ww.load_world(world_file)
 
     root = tk.Tk()
     grid = Grid(world, master=root)
     grid.mainloop()
+
 
 if __name__ == '__main__':
     example_run()

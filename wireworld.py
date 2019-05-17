@@ -7,6 +7,7 @@ relative_nbhd = ((-1,-1), (0,-1), (1,-1),
                  (-1, 0),         (1, 0),
                  (-1, 1), (0, 1), (1, 1))
 
+
 def ww_staterule(state, nbhd_state):
     '''
     The rules for the wireworld cellular automata.
@@ -35,6 +36,7 @@ def ww_staterule(state, nbhd_state):
             next_state = 3
     return next_state
 
+
 def life_staterule(state, nbhd_state):
     '''Rules for John Conway's game of life.'''
     next_state = 0
@@ -46,18 +48,19 @@ def life_staterule(state, nbhd_state):
             next_state = 1
     return next_state
 
+
 class CA:
     '''Contains the information needed to define a cellular automata'''
     def __init__(self, rule=None, mode=None, states=None, getrandom=False, ruledict=None):
         if getrandom:
             if states is None:
-                N = 3
+                n = 3
             else:
-                N = states
-            ca_rules = CA_generator.CA_rules(N_states=N)
+                n = states
+            ca_rules = CA_generator.CA_rules(N_states=n)
             self.rule = ca_rules.rules
             self.mode = 'semistable'
-            self.states = set(range(N))
+            self.states = set(range(n))
             self.ruledict = ca_rules.CA_dict
 
         elif ruledict is not None:
@@ -78,17 +81,19 @@ class CA:
                 self.states = states
             self.ruledict = None
 
+
 # initialise the relevant CA objects and store them in a dictionary for reference
 ww_CA = CA(rule=ww_staterule, mode='stable', states=4)
 life_CA = CA(rule=life_staterule, mode='semistable', states=2)
 CA_dict = {'wireworld': ww_CA,
            'life': life_CA}
 
+
 class World:
     '''
     An instance of a particular cellular automata or world.
     '''
-    def __init__(self, size=(7,7), content=None, CA=None, CA_type='wireworld'):
+    def __init__(self, size=(7, 7), content=None, CA=None, CA_type='wireworld'):
 
         '''
         Creates a particular cellular automata.
@@ -128,8 +133,8 @@ class World:
         else:
             # TODO run checks on content, perhaps reformat
             self.grid = content
-        self.changeset = set(self.grid) # This set keeps track of which cells have changed after each update
-        self.copy_section = None # This keeps track of copied sections
+        self.changeset = set(self.grid)  # This set keeps track of which cells have changed after each update
+        self.copy_section = None  # This keeps track of copied sections
 
     def printself(self):
         '''prints a representation of the current state in the console.'''
@@ -137,13 +142,13 @@ class World:
             rowlist = []
             for x in range(self.size[0]):
                 try:
-                    state = str(self.grid[(x,y)])
+                    state = str(self.grid[(x, y)])
                 except:
                     state = '*'
                 rowlist.append(state)
             print('-'.join(rowlist))
 
-    def editpoint(self, coord, value=None):
+    def editpoint(self, coord, value=None, cycle=True):
         '''
         Edit the state of a given cell.
 
@@ -156,16 +161,22 @@ class World:
             2 dimensional coordinate describing the location of the cell.
 
         Kwargs:
-            Value (int or None):
+            value (int or None):
             sets the new state of the cell. If None, state is decremented
         '''
         if value is None:
-            state = self.grid.setdefault(coord, 0)
-            state = (state-1) % (max(self.CA.states)+1)
-            if state == 0 and (self.CA.mode == 'stable' or self.CA.mode == 'semistable'):
-                self.grid.pop(coord)
+            if cycle:
+                state = self.grid.setdefault(coord, 0)
+                state = (state-1) % (max(self.CA.states)+1)
             else:
-                self.grid[coord] = state
+                state = 0
+        else:
+            state = value
+            state = state % (max(self.CA.states)+1)
+        if state == 0 and (self.CA.mode == 'stable' or self.CA.mode == 'semistable') and coord in self.grid:
+            self.grid.pop(coord)
+        else:
+            self.grid[coord] = state
         self.changeset = set(coord)
 
     def getneighbours(self, coord):
@@ -181,7 +192,7 @@ class World:
             dict
         '''
         state_dict = {state: 0 for state in self.CA.states}
-        for x,y in relative_nbhd:
+        for x, y in relative_nbhd:
             neighbour = (coord[0]+x, coord[1]+y)
             state = self.getcoordstate(neighbour)
             state_dict[state] += 1
@@ -197,7 +208,7 @@ class World:
     def trim(self):
         '''Removes all cells containing zeroes.'''
         for coord, state in self.grid.copy().items():
-            if state == 0 or (self.CA_type == 'random' and (max(coord)>120 or min(coord)<-120)):
+            if state == 0 or (self.CA_type == 'random' and (max(coord) > 120 or min(coord) < -120)):
                 del self.grid[coord]
 
     def getcoordstate(self, coord):
@@ -232,11 +243,11 @@ class World:
         '''Returns the bounds for the position of the active cells.'''
         if not bool(self.grid):
             return None
-        x_max = max(x for x,y in self.grid) # note: x,y is the coordinate, not the key value pair
-        x_min = min(x for x,y in self.grid)
-        y_max = max(y for x,y in self.grid)
-        y_min = min(y for x,y in self.grid)
-        return ((x_min,x_max), (y_min,y_max))
+        x_max = max(x for x, y in self.grid)  # note: x,y is the coordinate, not the key value pair
+        x_min = min(x for x, y in self.grid)
+        y_max = max(y for x, y in self.grid)
+        y_min = min(y for x, y in self.grid)
+        return (x_min, x_max), (y_min, y_max)
 
     def livecellcount(self):
         '''Returns the number of live cells.'''
@@ -260,11 +271,7 @@ class World:
             for dy, row in enumerate(self.copy_section.state_array):
                 for dx, state in enumerate(row):
                     coord = (top_left[0] + dx, top_left[1] + dy)
-                    if state is None:
-                        if coord in self.grid:
-                            del self.grid[coord]
-                    else:
-                        self.grid[coord] = state
+                    self.editpoint(coord, value=state, cycle=False)
 
     def erase_section(self, first_coord, second_coord):
         '''Erase all points within the chosen section'''
@@ -272,7 +279,7 @@ class World:
         bottom_right = (max(first_coord[0], second_coord[0]), max(first_coord[1], second_coord[1]))
         for x in range(top_left[0], bottom_right[0] + 1):
             for y in range(top_left[1], bottom_right[1] + 1):
-                coord = (x,y)
+                coord = (x, y)
                 if self.CA.mode == 'stable' or self.CA.mode == 'semistable':
                     if coord in self.grid:
                         del self.grid[coord]
@@ -280,13 +287,16 @@ class World:
                     self.grid[coord] = 0
 
 
-class CopySection():
+class CopySection:
     '''Keeps track of copied sections'''
     def __init__(self, world, first_coord, second_coord):
+        '''Create a copy of the world coordinates between the specified coordinates.'''
         self.state_array = self.calculate_state_array(world, first_coord, second_coord)
         self.offset = self.calculate_offset(first_coord, second_coord)
+        self.max_states = self.calculate_max_states()
 
     def calculate_state_array(self, world, first_coord, second_coord):
+        '''Returns an array containing all the states within the specified coordinates.'''
         coord_array = self.calculate_coord_array(first_coord, second_coord)
         state_array = []
         for coord_row in coord_array:
@@ -301,15 +311,28 @@ class CopySection():
         return state_array
 
     def calculate_coord_array(self, first_coord, second_coord):
+        '''Returns an array containing all the coordinates within the specified coordinates.'''
         top_left = (min(first_coord[0], second_coord[0]), min(first_coord[1], second_coord[1]))
         bottom_right = (max(first_coord[0], second_coord[0]), max(first_coord[1], second_coord[1]))
-        array = [[(x,y) for x in range(top_left[0], bottom_right[0]+1)] for y in range(top_left[1], bottom_right[1]+1)]
+        array = [[(x, y) for x in range(top_left[0], bottom_right[0]+1)] for y in range(top_left[1], bottom_right[1]+1)]
         return array
 
     def calculate_offset(self, first_coord, second_coord):
+        '''Returns the difference between the top left coord of the state_array and the first specified coord.'''
         top_left = (min(first_coord[0], second_coord[0]), min(first_coord[1], second_coord[1]))
         offset = (top_left[0] - first_coord[0], top_left[1] - first_coord[1])
         return offset
+
+    def calculate_max_states(self):
+        '''
+        Keeps track of the maximum stored state.
+
+        Thsi may be useful if pasting to a different CA.
+        '''
+        def none_to_zero(row):
+            return [0 if x is None else x for x in row]
+        max_state = max([max(none_to_zero(row)) for row in self.state_array])
+        return max_state
 
 
 #TODO add these as mothods for World
@@ -323,16 +346,16 @@ def load_world(infile):
     size = tuple(world_data['size'])
     state = world_data['state']
     if type(state) is dict:
-        state = {tuple(eval(k)): v for k,v in state.items()}
+        state = {tuple(eval(k)): v for k, v in state.items()}
     elif type(state) is list:
         # TODO turn an array into a dict
         pass
     if 'ruledict' in world_data:
         string_ruledict = world_data['ruledict']
         ruledict = {eval(k): v for k, v in string_ruledict.items()}
-        N_states = world_data['Nstates']
+        n_states = world_data['Nstates']
         mode = world_data['mode']
-        ca = CA(mode=mode, states=N_states, ruledict=ruledict)
+        ca = CA(mode=mode, states=n_states, ruledict=ruledict)
         world = World(size=size, content=state, CA=ca, CA_type=CA_type)
     else:
         world = World(size=size, content=state, CA_type=CA_type)
@@ -346,7 +369,7 @@ def save_world(world, outfile, permission='x'):
     CA_type = world.CA_type
     size = world.size
     state = world.grid
-    state = {str(k): v for k,v in state.items()}
+    state = {str(k): v for k, v in state.items()}
     ruledict = world.CA.ruledict
     world_data = {'CA_type': CA_type,
                   'size': size,
@@ -388,6 +411,7 @@ def example_run():
         world.printself()
 
     save_world(world, infile_2, permission='x')
+
 
 if __name__ == "__main__":
     example_run()
