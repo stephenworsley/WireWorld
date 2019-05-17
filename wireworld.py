@@ -50,13 +50,33 @@ def life_staterule(state, nbhd_state):
 
 
 class CA:
-    '''Contains the information needed to define a cellular automata'''
+    '''Contains the information needed to define a cellular automata.'''
     def __init__(self, rule=None, mode=None, states=None, getrandom=False, ruledict=None):
+        '''
+        Generate the information necessary to generate a cellular automata (CA).
+
+        Kwargs
+
+        * rule(function):
+            The function to be called when deciding the next state.
+        * mode(string):
+            Describes how to handle dead cells for performance.
+        * states(int or set):
+            Describes the possible states the CA can be in.
+            If states is a set, it is expected to be of the form set(range(n))
+        * getrandom(bool):
+            If true, generates a random CA.
+        * ruledict(dict):
+            May be passed in place of rule. A rule will be constructed from ruledict.
+        '''
         if getrandom:
             if states is None:
                 n = 3
-            else:
+            elif type(states) is int:
                 n = states
+            else:
+                n = len(states)
+            # Initialise a
             ca_rules = CA_generator.CA_rules(N_states=n)
             self.rule = ca_rules.rules
             self.mode = 'semistable'
@@ -109,15 +129,11 @@ class World:
 
         * content (dict):
             Sets the initial state of the cells
-        * staterule (function):
-            Sets the rules of the cellular automata
-        * mode (string):
-            Sets the behaviour of the implementation of the cellular automata rules.
-            e.g. a mode of 'stable' will leave empty cells empty
-        * states (set):
-            The set of all possible states for a cell to be in.
+        * CA(CA object):
+            Contains the information about the cellular automata to be run.
         * CA_type (string):
             A label corresponding to the type of cellular automata to be run.
+            May be passed in place of CA.
         '''
         self.CA_type = CA_type
         if CA is None:
@@ -126,9 +142,6 @@ class World:
             self.CA = CA
         self.size = size
         if content is None:
-            # keyset = {(x // size[0], x % size[1]) for x in
-            #           range(size[0] * size[1])}  # create a set of coordinate tuples
-            # self.grid = {k:0 for k in keyset}
             self.grid = dict()
         else:
             # TODO run checks on content, perhaps reformat
@@ -157,11 +170,11 @@ class World:
 
         Args:
 
-            coord (tuple):
+        * coord (tuple):
             2 dimensional coordinate describing the location of the cell.
 
         Kwargs:
-            value (int or None):
+        * value (int or None):
             sets the new state of the cell. If None, state is decremented
         '''
         if value is None:
@@ -172,7 +185,7 @@ class World:
                 state = 0
         else:
             state = value
-            state = state % (max(self.CA.states)+1)
+            state = state % (max(self.CA.states)+1)  # force the resulting state to be valid
         if state == 0 and (self.CA.mode == 'stable' or self.CA.mode == 'semistable') and coord in self.grid:
             self.grid.pop(coord)
         else:

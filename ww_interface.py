@@ -1,7 +1,7 @@
-import wireworld as ww
+import copy
 import tkinter as tk
 from tkinter import messagebox
-import copy
+import wireworld as ww
 
 
 # set the palettes to be used
@@ -12,47 +12,57 @@ oob_color = 'red'
 
 
 class Grid(tk.Frame):
-    '''Generates the wireworld GUI.'''
+    '''The frame containing the wireworld GUI.'''
     def __init__(self, world, master=None, size=None):
+        '''
+        Generate all the main tkinter widgets.
+
+        Args
+
+        * world(wireworld.World object):
+            The cellular automata instance which the widgets will interact with.
+
+        Kwargs:
+
+        * master(tkinter object):
+            The parent of the Grid.
+        * size(tuple):
+            Describes the size of the initial display.
+        '''
         super().__init__(master)
-        self.pack()
+        self.pack()  # place self inside master
+
+        # pack the sub-frames
         self.grid_frame = tk.Frame(self)
         self.grid_frame.pack(side='top')
         self.controls = tk.Frame(self)
         self.controls.pack(side='bottom')
         self.labels = tk.Frame(self.controls)
         self.labels.pack(side='bottom', fill='x')
-        self.zoomed = False
-
         self.copy_paste_frame = tk.Frame(self)
         self.copy_paste_frame.pack(side='right')
+        self.d_pad = tk.Frame(self)
+        self.d_pad.pack(side='top')
+
+        # set flags to default values
+        self.zoomed = False
         self.copy_stage = None
         self.paste_stage = None
         self.erase_stage = None
-        self.copy_button = tk.Button(self.copy_paste_frame, text='Copy', command=self.begin_copy)
-        self.copy_button.grid(row=0, column=0)
-        self.paste_button = tk.Button(self.copy_paste_frame, text='Paste', command=self.begin_paste)
-        self.paste_button.grid(row=0, column=1)
-        self.erase_button = tk.Button(self.copy_paste_frame, text='Erase', command=self.begin_erase)
-        self.erase_button.grid(row=0, column=2)
-        self.confirm_button = tk.Button(self.copy_paste_frame, text='Confirm', command=self.confirm)
-        self.confirm_button.grid(row=1, column=2)
-        self.stop_button = tk.Button(self.copy_paste_frame, text='Stop', command=self.stop_copy_paste)
-        self.stop_button.grid(row=1, column=0)
-        self.mode_label = tk.Label(self.copy_paste_frame, text='Current mode: Edit')
-        self.mode_label.grid(row=2, column=0, columnspan=3)
         self.first_coord = None
         self.second_coord = None
-        # self.copy_section = None # keep this saved in world object maybe
 
-        self.palette = colordict
         if size is None:
             self.size = world.size
         else:
             self.size = size
+        # set default North West offset value
         self.grid_NW = (0, 0)
         self.world = world
 
+        self.palette = colordict
+
+        # create size change buttons
         self.grb_na = tk.Button(self.grid_frame, text='+')
         self.grb_ea = tk.Button(self.grid_frame, text='+')
         self.grb_wa = tk.Button(self.grid_frame, text='+')
@@ -61,51 +71,14 @@ class Grid(tk.Frame):
         self.grb_ed = tk.Button(self.grid_frame, text='-')
         self.grb_wd = tk.Button(self.grid_frame, text='-')
         self.grb_sd = tk.Button(self.grid_frame, text='-')
+        # save default button color
         self.default_color_bg = self.grb_na.cget('background')
         self.default_color_abg = self.grb_na.cget('activebackground')
 
+        # create and grid the button display and size change buttons
         self.display_world()
 
-        self.update_button = tk.Button(self.controls, text='Update', command=self.w_update)
-        self.update_button.pack(side='left')
-        self.run_button = tk.Button(self.controls, text='Run', command=self.click_run, width=5)
-        self.run_button.pack(side='left')
-        self.running = False
-
-        self.checkpoint_button = tk.Button(self.controls, text='Checkpoint', command=self.checkpoint)
-        self.checkpoint_button.pack(side='left')
-        self.reset_button = tk.Button(self.controls, text='Reset', command=self.reset)
-        self.reset_button.pack(side='left')
-        self.cache = None
-        self.clear_button = tk.Button(self.controls, text='Clear', command=self.clear)
-        self.clear_button.pack(side='left')
-
-        self.delay = tk.IntVar()
-        self.delay.set(500)
-        self.delay_entry = tk.Entry(self.labels, textvariable=self.delay, width=6)
-        self.delay_label = tk.Label(self.labels, text='Delay')
-        self.delay_label.pack(side='left')
-        self.delay_entry.pack(side='left')
-        self.livecellcount = tk.Label(self.labels, text='Number of live cells: ')
-        self.livecellcount.pack(side='left')
-        self.spansize = tk.Label(self.labels, text='Horizontal span:  Vertical span: ')
-        self.spansize.pack(side='left')
-        self.cellcountupdate()
-        self.stepcount = tk.IntVar(0)
-        self.steps = tk.Label(self.labels, text='steps: {}'.format(self.stepcount.get()))
-        self.steps.pack(side='right')
-        self.stepcount.trace('w', self.stepchange)
-        self.stepcache = 0
-
-        self.file_button = tk.Button(self.controls, text='Load/Save', command=self.open_file_window)
-        self.file_button.pack(side='right')
-        self.p_switch = tk.Button(self.controls, text='Night mode', command=self.n_mode)
-        self.p_switch.pack(side='right')
-        self.random_button = tk.Button(self.controls, text='Become random', command=self.becomerandom)
-        self.random_button.pack(side='right')
-        self.zoom_button = tk.Button(self.controls, text='Zoom out', command=self.zoom_out)
-        self.zoom_button.pack(side='right')
-
+        # set the size change button commands
         self.add_n = self.grid_arrow_factory(orientation='N', operation='+')
         self.add_e = self.grid_arrow_factory(orientation='E', operation='+')
         self.add_w = self.grid_arrow_factory(orientation='W', operation='+')
@@ -123,12 +96,67 @@ class Grid(tk.Frame):
         self.grb_wd.config(command=self.del_w)
         self.grb_sd.config(command=self.del_s)
 
-        self.d_pad = tk.Frame(self)
-        self.movement = tk.IntVar()
+        # fill the main control panel
+        self.update_button = tk.Button(self.controls, text='Update', command=self.w_update)
+        self.update_button.pack(side='left')
+        self.run_button = tk.Button(self.controls, text='Run', command=self.click_run, width=5)
+        self.run_button.pack(side='left')
+        self.running = False  # this is set to True as long as the CA is running.
+
+        self.checkpoint_button = tk.Button(self.controls, text='Checkpoint', command=self.checkpoint)
+        self.checkpoint_button.pack(side='left')
+        self.reset_button = tk.Button(self.controls, text='Reset', command=self.reset)
+        self.reset_button.pack(side='left')
+        self.cache = None #  this will contain a copy of the world when the checkpoint button was last pressed
+        self.clear_button = tk.Button(self.controls, text='Clear', command=self.clear)
+        self.clear_button.pack(side='left')
+
+        self.file_button = tk.Button(self.controls, text='Load/Save', command=self.open_file_window)
+        self.file_button.pack(side='right')
+        self.p_switch = tk.Button(self.controls, text='Night mode', command=self.n_mode)
+        self.p_switch.pack(side='right')
+        self.random_button = tk.Button(self.controls, text='Become random', command=self.becomerandom)
+        self.random_button.pack(side='right')
+        self.zoom_button = tk.Button(self.controls, text='Zoom out', command=self.zoom_out)
+        self.zoom_button.pack(side='right')
+
+        # fill the labels in the control panel
+        self.delay = tk.IntVar()
+        self.delay.set(500)
+        self.delay_entry = tk.Entry(self.labels, textvariable=self.delay, width=6)
+        self.delay_label = tk.Label(self.labels, text='Delay')
+        self.delay_label.pack(side='left')
+        self.delay_entry.pack(side='left')
+        self.livecellcount = tk.Label(self.labels, text='Number of live cells: ')
+        self.livecellcount.pack(side='left')
+        self.spansize = tk.Label(self.labels, text='Horizontal span:  Vertical span: ')
+        self.spansize.pack(side='left')
+        self.cellcountupdate()
+        self.stepcount = tk.IntVar(0)
+        self.steps = tk.Label(self.labels, text='steps: {}'.format(self.stepcount.get()))
+        self.steps.pack(side='right')
+        self.stepcount.trace('w', self.stepchange)
+        self.stepcache = 0
+
+        # fill the copy paste button frame
+        self.copy_button = tk.Button(self.copy_paste_frame, text='Copy', command=self.begin_copy)
+        self.copy_button.grid(row=0, column=0)
+        self.paste_button = tk.Button(self.copy_paste_frame, text='Paste', command=self.begin_paste)
+        self.paste_button.grid(row=0, column=1)
+        self.erase_button = tk.Button(self.copy_paste_frame, text='Erase', command=self.begin_erase)
+        self.erase_button.grid(row=0, column=2)
+        self.confirm_button = tk.Button(self.copy_paste_frame, text='Confirm', command=self.confirm)
+        self.confirm_button.grid(row=1, column=2)
+        self.stop_button = tk.Button(self.copy_paste_frame, text='Stop', command=self.stop_copy_paste)
+        self.stop_button.grid(row=1, column=0)
+        self.mode_label = tk.Label(self.copy_paste_frame, text='Current mode: Edit')
+        self.mode_label.grid(row=2, column=0, columnspan=3)
+
+        # fill the movement frame
+        self.movement = tk.IntVar()  # this will control how many steps will be moved
         self.movement.set(1)
         self.movement_entry = tk.Entry(self.d_pad, textvariable=self.movement, width=3)
         self.movement_entry.grid(row=1, column=1)
-        self.d_pad.pack(side='top')
         self.d_N = tk.Button(self.d_pad, text='N')
         self.d_N.grid(row=0, column=1)
         self.d_E = tk.Button(self.d_pad, text='E')
@@ -142,6 +170,7 @@ class Grid(tk.Frame):
                                         onvalue=1, offvalue=0)
         self.zoom_lock.grid(row=2, column=2, columnspan=2)
 
+        # set commands for the move buttons
         self.move_N = self.move_factory('N')
         self.move_E = self.move_factory('E')
         self.move_W = self.move_factory('W')
@@ -292,8 +321,6 @@ class Grid(tk.Frame):
             for x in range(self.size[0]):
                 self.button_array[y][x].config(command=self.command_generator((x, y)))
 
-    # This seems to be one of the bottlenecks for speed, this could be improved by keeping track of which buttons
-    # are necessary to update.
     def refresh(self, full=True):
         '''Sets all the appropriate colors to the button grid.'''
         if full or self.world.CA.mode != 'stable':  # wireworld shouldn't add or remove live cells while self updating
@@ -764,12 +791,16 @@ class Grid(tk.Frame):
         self.world.paste_copy(self.first_coord)
         self.stop_copy_paste()
         self.refresh()
+        self.world_bounds = self.world.getbounds()
+        self.indicate_oob()
 
     def erase_action(self):
         '''Sets cell states to 0 or None within specified area.'''
         self.world.erase_section(self.first_coord, self.second_coord)
         self.stop_copy_paste()
         self.refresh()
+        self.world_bounds = self.world.getbounds()
+        self.indicate_oob()
 
     def first_copy(self, w_coord):  # TODO make the button size uniform somehow, or maybe it's a feature
         '''Sets the first coordinate after the copy process has started.'''
