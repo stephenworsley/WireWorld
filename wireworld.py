@@ -105,6 +105,7 @@ class CA:
 # initialise the relevant CA objects and store them in a dictionary for reference
 ww_CA = CA(rule=ww_staterule, mode='stable', states=4)
 life_CA = CA(rule=life_staterule, mode='semistable', states=2)
+# ww_CA has two keys because I want to be able to pass it as arguments to both World and WireWorld while loading
 CA_dict = {'wireworld': ww_CA,
            'wireworld-slow': ww_CA,
            'life': life_CA}
@@ -194,6 +195,7 @@ class World:
         self.changeset = set(coord)
 
     def getneighbourcoords(self, coord):
+        '''Returns the coordinates neighbouring a given point.'''
         return [(coord[0]+x, coord[1]+y) for x, y in relative_nbhd]
 
     def getneighbours(self, coord):
@@ -309,6 +311,9 @@ class CopySection:
         '''Create a copy of the world coordinates between the specified coordinates.'''
         self.state_array = self.calculate_state_array(world, first_coord, second_coord)
         self.offset = self.calculate_offset(first_coord, second_coord)
+        # self.max_states is not currently used, it was designed for the case where a section is pasted into a world
+        # which allows fewer states with a view that it would give an appropriate warning.
+        # This feature is not yet implemented.
         self.max_states = self.calculate_max_states()
 
     def calculate_state_array(self, world, first_coord, second_coord):
