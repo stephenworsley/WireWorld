@@ -414,7 +414,7 @@ class Grid(tk.Frame):
     def clear(self):
         '''Removes world grid data and pauses.'''
         self.pause()
-        self.world.grid = dict()
+        self.world.clear
         self.world_bounds = None
         self.refresh()
         self.stepcount.set(0)

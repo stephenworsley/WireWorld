@@ -106,6 +106,7 @@ class CA:
 ww_CA = CA(rule=ww_staterule, mode='stable', states=4)
 life_CA = CA(rule=life_staterule, mode='semistable', states=2)
 CA_dict = {'wireworld': ww_CA,
+           'wireworld-slow': ww_CA,
            'life': life_CA}
 
 
@@ -192,6 +193,9 @@ class World:
             self.grid[coord] = state
         self.changeset = set(coord)
 
+    def getneighbourcoords(self, coord):
+        return [(coord[0]+x, coord[1]+y) for x, y in relative_nbhd]
+
     def getneighbours(self, coord):
         '''
         Returns the states of neighbouring cells.
@@ -205,8 +209,7 @@ class World:
             dict
         '''
         state_dict = {state: 0 for state in self.CA.states}
-        for x, y in relative_nbhd:
-            neighbour = (coord[0]+x, coord[1]+y)
+        for neighbour in self.getneighbourcoords(coord):
             state = self.getcoordstate(neighbour)
             state_dict[state] += 1
         return state_dict
@@ -293,11 +296,11 @@ class World:
         for x in range(top_left[0], bottom_right[0] + 1):
             for y in range(top_left[1], bottom_right[1] + 1):
                 coord = (x, y)
-                if self.CA.mode == 'stable' or self.CA.mode == 'semistable':
-                    if coord in self.grid:
-                        del self.grid[coord]
-                else:
-                    self.grid[coord] = 0
+                self.editpoint(coord, value=0)
+
+    def clear(self):
+        '''Removes all live cells.'''
+        self.grid = dict()
 
 
 class CopySection:
@@ -348,6 +351,85 @@ class CopySection:
         return max_state
 
 
+class WireWorld(World):
+    '''
+    A version of the World class taylored to wireworld.
+
+    Performance is improved by only checking for updates near red (state 1) cells.
+    If there are many state (3) cells, these will not be checked while updating.
+    '''
+    def __init__(self, size=(7, 7), content=None):
+        super().__init__(size=size, content=content, CA_type='wireworld')
+        self.red_cells = self.get_state_cells(1)
+        self.blue_cells = self.get_state_cells(2)
+
+    def get_state_cells(self, target_state):
+        '''Returns a set of all cells in the target state.'''
+        state_cells = set()
+        for coord, state in self.grid.items():
+            if state == target_state:
+                state_cells.add(coord)
+        return state_cells
+
+    def step(self):
+        '''
+        Applies one iteration of the cellular automata rule
+
+        If the automata is wireworld, an improved algorithm is applied.
+        '''
+        if self.CA_type != 'wireworld':
+            super().step()
+        else:
+            self.changeset = set()
+            important_cells = set()
+            new_reds = set()
+            for coord in self.red_cells:
+                for neighbour in self.getneighbourcoords(coord):
+                    if self.getcoordstate(neighbour) == 3:
+                        important_cells.add(neighbour)
+            for coord in important_cells:
+                state = 3
+                nbhd_state = self.getneighbours(coord)
+                new_state = self.CA.rule(state, nbhd_state)
+                if new_state == 1:
+                    new_reds.add(coord)
+            for coord in new_reds:
+                self.grid[coord] = 1
+                self.changeset.add(coord)
+            for coord in self.red_cells:
+                self.grid[coord] = 2
+                self.changeset.add(coord)
+            for coord in self.blue_cells:
+                self.grid[coord] = 3
+                self.changeset.add(coord)
+            self.blue_cells = self.red_cells
+            self.red_cells = new_reds
+
+    def editpoint(self, coord, value=None, cycle=True):
+        '''Edits a specified point while keeping track of red and blue cells.'''
+        start_value = self.getcoordstate(coord)
+        super().editpoint(coord, value=value, cycle=cycle)
+        next_value = self.getcoordstate(coord)
+
+        if start_value == 1:
+            self.red_cells.discard(coord)
+        elif start_value == 2:
+            self.blue_cells.discard(coord)
+        if next_value == 1:
+            self.red_cells.add(coord)
+        elif next_value == 2:
+            self.blue_cells.add(coord)
+
+    def clear(self):
+        '''Removes all live cells.'''
+        super().clear()
+        self.red_cells = set()
+        self.blue_cells = set()
+
+
+
+
+
 #TODO add these as mothods for World
 def load_world(infile):
     '''Loads Json file into a World object.'''
@@ -370,6 +452,8 @@ def load_world(infile):
         mode = world_data['mode']
         ca = CA(mode=mode, states=n_states, ruledict=ruledict)
         world = World(size=size, content=state, CA=ca, CA_type=CA_type)
+    elif CA_type == 'wireworld':
+        world = WireWorld(size=size, content=state)
     else:
         world = World(size=size, content=state, CA_type=CA_type)
     return world
